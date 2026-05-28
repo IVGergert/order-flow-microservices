@@ -1,0 +1,70 @@
+services:
+  order-db:
+    image: postgres:16
+    container_name: order-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${ORDER_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${ORDER_DB_PORT}:5432"
+    volumes:
+      - postgres_order_data:/var/lib/postgresql/data
+    networks:
+      - order-flow-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${ORDER_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  payment-db:
+    image: postgres:16
+    container_name: payment-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PAYMENT_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${PAYMENT_DB_PORT}:5432"
+    volumes:
+      - postgres_payment_data:/var/lib/postgresql/data
+    networks:
+      - order-flow-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${PAYMENT_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  delivery-db:
+    image: postgres:16
+    container_name: delivery-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DELIVERY_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${DELIVERY_DB_PORT}:5432"
+    volumes:
+      - postgres_delivery_data:/var/lib/postgresql/data
+    networks:
+      - order-flow-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${DELIVERY_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  order-flow-network:
+    driver: bridge
+    name: order-flow-network
+
+volumes:
+  postgres_order_data:
+  postgres_payment_data:
+  postgres_delivery_data:
