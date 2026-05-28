@@ -19,6 +19,7 @@ target/
 .classpath
 .project
 .settings/
+amplicode.xml
 
 ### VS Code ###
 .vscode/
