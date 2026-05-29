@@ -3,6 +3,7 @@ package com.gergert.orderservice.controller;
 import com.gergert.orderservice.dto.CreateOrderRequestDto;
 import com.gergert.orderservice.dto.OrderDto;
 import com.gergert.orderservice.dto.OrderMapper;
+import com.gergert.orderservice.dto.payment.OrderPaymentRequestDto;
 import com.gergert.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +19,9 @@ public class OrderController {
     private final OrderMapper orderMapper;
 
     @PostMapping
-    public OrderDto create(@RequestBody CreateOrderRequestDto request) {
-        log.info("Creating order: {}", request);
-        var saved = orderService.create(request);
+    public OrderDto create(@RequestBody CreateOrderRequestDto requestDto) {
+        log.info("Creating order: {}", requestDto);
+        var saved = orderService.create(requestDto);
         return orderMapper.toOrderDto(saved);
     }
 
@@ -29,5 +30,13 @@ public class OrderController {
         log.info("Retrieving order with id {}", id);
         var found = orderService.getOrderOrThrow(id);
         return orderMapper.toOrderDto(found);
+    }
+
+    @PostMapping("/{id}/pay")
+    public OrderDto payOrder(@PathVariable Long id,
+                             @RequestBody OrderPaymentRequestDto requestDto) {
+        log.info("Paying order with id={}, request={}", id, requestDto);
+        var entity = orderService.processPayment(id, requestDto);
+        return orderMapper.toOrderDto(entity);
     }
 }

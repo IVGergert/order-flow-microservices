@@ -7,5 +7,5 @@ public record OrderItemDto(
         Long itemId,
         String itemName,
         BigDecimal priceAtPurchase,
-        Integer quantity )
+        Integer quantity)
 {}

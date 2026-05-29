@@ -1,7 +1,10 @@
 package com.gergert.orderservice.service;
 
+import com.gergert.orderservice.client.PaymentHttpClient;
 import com.gergert.orderservice.dto.CreateOrderRequestDto;
 import com.gergert.orderservice.dto.OrderMapper;
+import com.gergert.orderservice.dto.payment.CreatePaymentRequestDto;
+import com.gergert.orderservice.dto.payment.OrderPaymentRequestDto;
 import com.gergert.orderservice.entity.Order;
 import com.gergert.orderservice.entity.OrderItem;
 import com.gergert.orderservice.entity.OrderStatus;
@@ -20,6 +23,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
+    private final PaymentHttpClient paymentHttpClient;
 
     public Order create(CreateOrderRequestDto request) {
         var entity = orderMapper.toEntity(request);
@@ -47,5 +51,27 @@ public class OrderService {
         }
 
         order.setTotalAmount(totalPrice);
+    }
+
+    public Order processPayment(Long id,  OrderPaymentRequestDto requestDto){
+        var entity = getOrderOrThrow(id);
+
+        if (!entity.getStatus().equals(OrderStatus.PENDING_PAYMENT)){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Order must be in status PENDING_PAYMENT");
+        }
+
+        var response = paymentHttpClient.createPayment(CreatePaymentRequestDto.builder()
+                        .orderId(id)
+                        .paymentMethod(requestDto.paymentMethod())
+                        .amount(entity.getTotalAmount())
+                .build());
+
+
+        var status = response.paymentStatus().equals("PAYMENT_SUCCEEDED")
+                ? OrderStatus.PAID
+                : OrderStatus.PAYMENT_FAILED;
+
+        entity.setStatus(status);
+        return orderRepository.save(entity);
     }
 }
