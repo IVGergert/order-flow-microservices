@@ -14,5 +14,6 @@ public interface PaymentMapper {
     Payment toEntity(CreatePaymentRequestDto requestDto);
 
     @Mapping(source = "id", target = "paymentId")
+    @Mapping(source = "paymentStatus", target = "paymentStatus")
     CreatePaymentResponseDto toResponseDto(Payment payment);
 }

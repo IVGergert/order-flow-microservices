@@ -10,7 +10,7 @@ public record OrderDto(
         Long customerId,
         String address,
         BigDecimal totalAmount,
-        OrderStatus status,
+        OrderStatus orderStatus,
         String courierName,
         Integer etaMinutes,
         Set<OrderItemDto> items)

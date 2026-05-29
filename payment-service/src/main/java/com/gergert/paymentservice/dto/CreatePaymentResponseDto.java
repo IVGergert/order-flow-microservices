@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 public record CreatePaymentResponseDto(
         Long paymentId,
         Long orderId,
-        PaymentMethod paymentMethod,
         BigDecimal amount,
-        PaymentStatus status)
+        PaymentStatus paymentStatus,
+        PaymentMethod paymentMethod)
 {}

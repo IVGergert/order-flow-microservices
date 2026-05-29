@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public record CreatePaymentResponseDto(
         Long paymentId,
         Long orderId,
-        String paymentMethod,
         BigDecimal amount,
+        String paymentMethod,
         String paymentStatus)
 {}

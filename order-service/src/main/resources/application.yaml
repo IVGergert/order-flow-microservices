@@ -19,5 +19,12 @@ spring:
       hibernate:
         format_sql: true
 
+  kafka:
+    bootstrap-servers: http://localhost:9092
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+
 payment-service:
   base-url: http://localhost:8082
+

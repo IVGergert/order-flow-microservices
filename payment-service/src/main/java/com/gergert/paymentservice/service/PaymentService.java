@@ -20,6 +20,7 @@ public class PaymentService {
 
     public CreatePaymentResponseDto makePayment(CreatePaymentRequestDto requestDto){
         var found = paymentRepository.findByOrderId(requestDto.orderId());
+
         if (found.isPresent()){
             log.info("Payment already exists for orderId={}", requestDto.orderId());
             return mapper.toResponseDto(found.get());

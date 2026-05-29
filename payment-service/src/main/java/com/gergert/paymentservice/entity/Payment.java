@@ -33,9 +33,4 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)
     private PaymentMethod paymentMethod;
-
-
-
-
-
 }
