@@ -3,7 +3,7 @@ package com.gergert.orderservice.controller;
 import com.gergert.orderservice.dto.CreateOrderRequestDto;
 import com.gergert.orderservice.dto.OrderDto;
 import com.gergert.orderservice.dto.OrderMapper;
-import com.gergert.orderservice.dto.payment.OrderPaymentRequestDto;
+import com.gergert.common.dto.OrderPaymentRequestDto;
 import com.gergert.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

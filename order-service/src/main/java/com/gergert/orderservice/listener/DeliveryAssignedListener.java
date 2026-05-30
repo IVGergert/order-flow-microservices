@@ -1,0 +1,49 @@
+package com.gergert.orderservice.listener;
+
+import com.gergert.common.dto.kafka.DeliveryAssignedEventDto;
+import com.gergert.orderservice.entity.Order;
+import com.gergert.orderservice.entity.OrderStatus;
+import com.gergert.orderservice.repository.OrderRepository;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
+
+@Slf4j
+@Component
+@AllArgsConstructor
+public class DeliveryAssignedListener {
+    private final OrderRepository orderRepository;
+
+    @KafkaListener(
+            topics = "delivery.events",
+            groupId = "order-group"
+    )
+
+    public void handle(DeliveryAssignedEventDto eventDto) {
+
+        Order order = getOrderOrThrow(eventDto.orderId());
+
+        if (order.getOrderStatus() == OrderStatus.DELIVERY_ASSIGNED) {
+            return;
+        }
+
+        log.info("Received DeliveryAssignedEvent: orderId={}", eventDto.orderId());
+
+        order.setOrderStatus(OrderStatus.DELIVERY_ASSIGNED);
+        order.setCourierName(eventDto.courierName());
+        order.setEtaMinutes(eventDto.etaMinutes());
+
+        orderRepository.save(order);
+
+        log.info("Order {} updated to DELIVERY_ASSIGNED with courier {}", eventDto.orderId(), eventDto.courierName());
+    }
+
+    private Order getOrderOrThrow(Long id) {
+        var orderOptional = orderRepository.findById(id);
+        return orderOptional.orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity with id `%s` not found".formatted(id)));
+    }
+}

@@ -1,0 +1,28 @@
+package com.gergert.deliveryservice.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "deliveries")
+public class Delivery {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @Column (name = "id", nullable = false)
+    private Long id;
+
+    @Column(name = "order_id")
+    private Long orderId;
+
+    @ManyToOne
+    @JoinColumn(name = "courier_id")
+    private Courier courier;
+
+    @Column(name = "eta_minutes")
+    private Integer etaMinutes;
+}

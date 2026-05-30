@@ -7,10 +7,10 @@
         <artifactId>order-flow-microservices</artifactId>
         <version>1.0.0</version>
     </parent>
-    <artifactId>payment-service</artifactId>
+    <artifactId>delivery-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>payment-service</name>
-    <description>payment-service</description>
+    <name>delivery-service</name>
+    <description>delivery-service</description>
     <url/>
     <licenses>
         <license/>
@@ -34,7 +34,21 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-json</artifactId>
         </dependency>
 
         <dependency>
@@ -42,16 +56,19 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -60,15 +77,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct</artifactId>
-            <version>1.6.0</version>
+            <groupId>com.gergert</groupId>
+            <artifactId>common-libs</artifactId>
+            <version>1.0.0</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.gergert</groupId>
-            <artifactId>common-libs</artifactId>
-            <version>1.0.0</version>
+            <artifactId>order-service</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
@@ -87,36 +104,21 @@
                     </excludes>
                 </configuration>
             </plugin>
-
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
-
                         <id>default-compile</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>compile</goal>
                         </goals>
-
                         <configuration>
                             <annotationProcessorPaths>
                                 <path>
-                                    <groupId>org.mapstruct</groupId>
-                                    <artifactId>mapstruct-processor</artifactId>
-                                    <version>1.6.0</version>
-                                </path>
-                                <path>
                                     <groupId>org.projectlombok</groupId>
                                     <artifactId>lombok</artifactId>
-                                    <version>1.18.30</version>
-                                </path>
-                                <path>
-                                    <groupId>org.projectlombok</groupId>
-                                    <artifactId>lombok-mapstruct-binding</artifactId>
-                                    <version>0.2.0</version>
                                 </path>
                             </annotationProcessorPaths>
                         </configuration>
@@ -130,19 +132,8 @@
                         <configuration>
                             <annotationProcessorPaths>
                                 <path>
-                                    <groupId>org.mapstruct</groupId>
-                                    <artifactId>mapstruct-processor</artifactId>
-                                    <version>1.6.0</version>
-                                </path>
-                                <path>
                                     <groupId>org.projectlombok</groupId>
                                     <artifactId>lombok</artifactId>
-                                    <version>1.18.30</version>
-                                </path>
-                                <path>
-                                    <groupId>org.projectlombok</groupId>
-                                    <artifactId>lombok-mapstruct-binding</artifactId>
-                                    <version>0.2.0</version>
                                 </path>
                             </annotationProcessorPaths>
                         </configuration>

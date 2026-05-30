@@ -1,7 +1,7 @@
-package com.gergert.paymentservice.dto;
+package com.gergert.common.dto;
 
-import com.gergert.paymentservice.entity.PaymentMethod;
-import com.gergert.paymentservice.entity.PaymentStatus;
+import com.gergert.common.enums.PaymentMethod;
+import com.gergert.common.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 

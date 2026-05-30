@@ -1,10 +1,10 @@
 package com.gergert.paymentservice.service;
 
-import com.gergert.paymentservice.dto.CreatePaymentRequestDto;
-import com.gergert.paymentservice.dto.CreatePaymentResponseDto;
+import com.gergert.common.dto.CreatePaymentRequestDto;
+import com.gergert.common.dto.CreatePaymentResponseDto;
+import com.gergert.common.enums.PaymentMethod;
+import com.gergert.common.enums.PaymentStatus;
 import com.gergert.paymentservice.dto.PaymentMapper;
-import com.gergert.paymentservice.entity.PaymentMethod;
-import com.gergert.paymentservice.entity.PaymentStatus;
 import com.gergert.paymentservice.repository.PaymentRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

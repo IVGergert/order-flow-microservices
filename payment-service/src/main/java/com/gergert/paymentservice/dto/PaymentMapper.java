@@ -1,5 +1,7 @@
 package com.gergert.paymentservice.dto;
 
+import com.gergert.common.dto.CreatePaymentRequestDto;
+import com.gergert.common.dto.CreatePaymentResponseDto;
 import com.gergert.paymentservice.entity.Payment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

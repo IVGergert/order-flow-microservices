@@ -1,5 +1,6 @@
-package com.gergert.orderservice.dto.payment;
+package com.gergert.common.dto;
 
+import com.gergert.common.enums.PaymentMethod;
 import lombok.Builder;
 
 import java.math.BigDecimal;
@@ -7,6 +8,6 @@ import java.math.BigDecimal;
 @Builder
 public record CreatePaymentRequestDto(
         Long orderId,
-        String paymentMethod,
+        PaymentMethod paymentMethod,
         BigDecimal amount)
 {}

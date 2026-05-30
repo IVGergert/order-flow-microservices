@@ -1,16 +1,18 @@
 package com.gergert.orderservice.service;
 
+import com.gergert.common.dto.OrderPaymentRequestDto;
+import com.gergert.common.dto.CreatePaymentRequestDto;
+import com.gergert.common.enums.PaymentStatus;
 import com.gergert.orderservice.client.PaymentHttpClient;
 import com.gergert.orderservice.dto.CreateOrderRequestDto;
 import com.gergert.orderservice.dto.OrderMapper;
-import com.gergert.orderservice.dto.kafka.OrderPaidEvent;
-import com.gergert.orderservice.dto.payment.CreatePaymentRequestDto;
-import com.gergert.orderservice.dto.payment.OrderPaymentRequestDto;
+import com.gergert.common.dto.kafka.OrderPaidEventDto;
 import com.gergert.orderservice.entity.Order;
 import com.gergert.orderservice.entity.OrderItem;
 import com.gergert.orderservice.entity.OrderStatus;
 import com.gergert.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -19,9 +21,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class OrderService {
+    private static final String ORDER_EVENTS_TOPIC = "order.events";
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
@@ -70,7 +74,7 @@ public class OrderService {
                         .amount(entity.getTotalAmount())
                 .build());
 
-        var status = "PAYMENT_SUCCEEDED".equals(response.paymentStatus())
+        var status = PaymentStatus.PAYMENT_SUCCEEDED.equals(response.paymentStatus())
                 ? OrderStatus.PAID
                 : OrderStatus.PAYMENT_FAILED;
 
@@ -78,12 +82,19 @@ public class OrderService {
         Order savedOrder = orderRepository.save(entity);
 
         if (status == OrderStatus.PAID){
-            OrderPaidEvent event = OrderPaidEvent.builder()
+            OrderPaidEventDto event = OrderPaidEventDto.builder()
                     .orderId(savedOrder.getId())
                     .address(savedOrder.getAddress())
+                    .amount(savedOrder.getTotalAmount())
                     .build();
 
-            kafkaTemplate.send("paid-orders", event);
+            log.info("Sending OrderPaidEvent for orderId={}", savedOrder.getId());
+
+            kafkaTemplate.send(
+                    ORDER_EVENTS_TOPIC,
+                    savedOrder.getId().toString(),
+                    event
+            );
         }
 
         return savedOrder;

@@ -1,5 +1,7 @@
 package com.gergert.paymentservice.entity;
 
+import com.gergert.common.enums.PaymentMethod;
+import com.gergert.common.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
