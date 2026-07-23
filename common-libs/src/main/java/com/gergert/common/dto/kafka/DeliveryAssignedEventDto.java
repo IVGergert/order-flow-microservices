@@ -7,5 +7,7 @@ public record DeliveryAssignedEventDto(
         Long orderId,
         Long courierId,
         String courierName,
-        Integer etaMinutes)
+        String address,
+        Integer etaMinutes
+)
 {}

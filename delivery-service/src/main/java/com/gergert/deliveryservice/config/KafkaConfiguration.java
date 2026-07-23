@@ -11,6 +11,7 @@ import org.springframework.util.backoff.FixedBackOff;
 @Configuration
 @Slf4j
 public class KafkaConfiguration {
+
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory (
             ConsumerFactory<String, Object> consumerFactory) {

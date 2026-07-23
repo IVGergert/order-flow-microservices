@@ -21,12 +21,14 @@ spring:
 
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         acks: all
         retries: 3
+
     consumer:
       group-id: order-group
       auto-offset-reset: earliest
