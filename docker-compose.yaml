@@ -37,14 +37,17 @@ services:
       - PAYMENT_DB_URL=jdbc:postgresql://payment-db:5432/${PAYMENT_DB_NAME}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     networks:
       - order-flow-network
     depends_on:
       payment-db:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
 
   delivery-service:
     build:
@@ -68,7 +71,7 @@ services:
         condition: service_healthy
 
   order-db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: order-db
     restart: unless-stopped
     environment:
@@ -88,7 +91,7 @@ services:
       retries: 5
 
   payment-db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: payment-db
     restart: unless-stopped
     environment:
@@ -108,7 +111,7 @@ services:
       retries: 5
 
   delivery-db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: delivery-db
     restart: unless-stopped
     environment:

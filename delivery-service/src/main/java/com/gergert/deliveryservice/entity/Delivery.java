@@ -16,7 +16,7 @@ public class Delivery {
     @Column (name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "order_id")
+    @Column(name = "order_id", unique = true)
     private Long orderId;
 
     @ManyToOne

@@ -27,6 +27,7 @@ public class DeliveryAssignedListener {
         Order order = getOrderOrThrow(eventDto.orderId());
 
         if (order.getOrderStatus() == OrderStatus.DELIVERY_ASSIGNED) {
+            log.info("Order {} already in DELIVERY_ASSIGNED status, skipping", eventDto.orderId());
             return;
         }
 
@@ -35,14 +36,17 @@ public class DeliveryAssignedListener {
         order.setOrderStatus(OrderStatus.DELIVERY_ASSIGNED);
         order.setCourierName(eventDto.courierName());
         order.setEtaMinutes(eventDto.etaMinutes());
-
         orderRepository.save(order);
 
-        log.info("Order {} updated to DELIVERY_ASSIGNED with courier {}", eventDto.orderId(), eventDto.courierName());
+        log.info("Order {} updated to DELIVERY_ASSIGNED, courier={}, eta={}min",
+                eventDto.orderId(),
+                eventDto.courierName(),
+                eventDto.etaMinutes());
     }
 
     private Order getOrderOrThrow(Long id) {
         var orderOptional = orderRepository.findById(id);
+
         return orderOptional.orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity with id `%s` not found".formatted(id)));
     }

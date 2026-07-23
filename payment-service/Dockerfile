@@ -1,19 +1,30 @@
 # Build
 FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-COPY . .
+COPY pom.xml ./
+COPY common-libs/pom.xml common-libs/pom.xml
+COPY order-service/pom.xml order-service/pom.xml
+COPY payment-service/pom.xml payment-service/pom.xml
+COPY delivery-service/pom.xml delivery-service/pom.xml
 
-RUN mvn clean package -pl payment-service -am -DskipTests
+RUN mvn dependency:go-offline -pl common-libs,payment-service -am -B -q
+
+COPY common-libs/src common-libs/src
+COPY payment-service/src payment-service/src
+
+RUN mvn package -pl common-libs,payment-service -am -DskipTests -B -q
 
 # Run
 FROM eclipse-temurin:17-jre-alpine
 
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
-COPY --from=builder /app/payment-service/target/*.jar app.jar
+COPY --from=builder /build/payment-service/target/*.jar app.jar
 
 EXPOSE 8082
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]

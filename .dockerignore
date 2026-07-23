@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Maven
+mvnw
+mvnw.cmd
+.mvn/
+**/mvnw
+**/mvnw.cmd
+**/.mvn/
+**/target/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.classpath
+*.project
+*.settings/
+amplicode.xml
+
+# Docker
+**/Dockerfile
+docker-compose.yaml
+docker-compose.yml
+.dockerignore
+
+# Документация
+README.md
+*.md
+.editorconfig
+
+# Secrets
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

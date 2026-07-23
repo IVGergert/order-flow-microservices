@@ -13,6 +13,7 @@ import com.gergert.orderservice.entity.OrderStatus;
 import com.gergert.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,8 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 @Service
 public class OrderService {
-    private static final String ORDER_EVENTS_TOPIC = "order.events";
+    @Value("${kafka.topics.order-events}")
+    private String orderEventsTopic;
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
@@ -91,9 +93,11 @@ public class OrderService {
             log.info("Sending OrderPaidEvent for orderId={}", savedOrder.getId());
 
             kafkaTemplate.send(
-                    ORDER_EVENTS_TOPIC,
+                    orderEventsTopic,
                     savedOrder.getId().toString(),
                     event
+            ).thenAccept(result ->
+                    log.info("OrderPaidEvent sent for orderId={}", savedOrder.getId())
             );
         }
 

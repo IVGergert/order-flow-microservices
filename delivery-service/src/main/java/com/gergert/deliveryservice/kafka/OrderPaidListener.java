@@ -17,7 +17,6 @@ public class OrderPaidListener {
             topics = "order.events",
             groupId = "delivery-group"
     )
-
     public void handle(OrderPaidEventDto eventDto){
         log.info("Received OrderPaidEvent: orderId={}", eventDto.orderId());
         deliveryService.createDelivery(eventDto);

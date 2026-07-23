@@ -24,15 +24,30 @@ spring:
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-
+      properties:
+        acks: all
+        retries: 3
     consumer:
       group-id: order-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "*"
+        spring.json.trusted.packages: "com.gergert.common.dto.kafka"
+
+kafka:
+  topics:
+    order-events: order.events
+    delivery-events: delivery.events
 
 payment-service:
   base-url: ${PAYMENT_SERVICE_URL}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

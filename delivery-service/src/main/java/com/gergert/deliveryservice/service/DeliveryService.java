@@ -5,44 +5,51 @@ import com.gergert.common.dto.kafka.OrderPaidEventDto;
 import com.gergert.deliveryservice.entity.Courier;
 import com.gergert.deliveryservice.entity.CourierStatus;
 import com.gergert.deliveryservice.entity.Delivery;
+import com.gergert.deliveryservice.exception.NoCourierAvailableException;
 import com.gergert.deliveryservice.repository.CourierRepository;
 import com.gergert.deliveryservice.repository.DeliveryRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class DeliveryService {
-    private static final String DELIVERY_EVENTS_TOPIC = "delivery.events";
-
     private final DeliveryRepository deliveryRepository;
     private final CourierRepository courierRepository;
     private final KafkaTemplate<String, DeliveryAssignedEventDto> kafkaTemplate;
 
-    public void createDelivery(OrderPaidEventDto eventDto){
-        Courier courier = courierRepository
-                .findFirstByCourierStatus(CourierStatus.AVAILABLE)
-                        .orElse(null);
+    @Value("${kafka.topics.delivery-events}")
+    private String deliveryEventsTopic;
 
-        if (courier == null){
-            log.warn("No available couriers for order {}", eventDto.orderId());
+    @Transactional
+    public void createDelivery(OrderPaidEventDto eventDto) {
+
+        if (deliveryRepository.findByOrderId(eventDto.orderId()).isPresent()){
+            log.info("Delivery already assigned for orderId={}, skipping", eventDto.orderId());
             return;
         }
+
+        Courier courier = courierRepository
+                .findFirstByCourierStatus(CourierStatus.AVAILABLE)
+                .orElseThrow(() -> {
+                    log.warn("No available couriers for orderId={}. Retrying...", eventDto.orderId());
+                    return new NoCourierAvailableException(eventDto.orderId());
+                });
 
         courier.setCourierStatus(CourierStatus.BUSY);
         courierRepository.save(courier);
 
-        var etaMinutes = ThreadLocalRandom.current().nextInt(20,60);
-
         Delivery delivery = Delivery.builder()
                 .orderId(eventDto.orderId())
                 .courier(courier)
-                .etaMinutes(etaMinutes)
+                .etaMinutes(ThreadLocalRandom.current().nextInt(20,60))
                 .build();
 
         var savedDelivery = deliveryRepository.save(delivery);
@@ -56,11 +63,15 @@ public class DeliveryService {
 
 
         kafkaTemplate.send(
-                DELIVERY_EVENTS_TOPIC,
+                deliveryEventsTopic,
                 savedDelivery.getOrderId().toString(),
                 kafkaEvent
-        );
+        ).thenAccept(result ->
+                log.info("DeliveryAssignedEvent sent for orderId={}", eventDto.orderId()));
 
-        log.info("Delivery assigned for order: {}", eventDto.orderId());
+        log.info("Delivery assigned: orderId={}, courier={}, eta={}min",
+                eventDto.orderId(),
+                courier.getName(),
+                savedDelivery.getEtaMinutes());
     }
 }
