@@ -20,7 +20,7 @@ spring:
         format_sql: true
 
   kafka:
-    bootstrap-servers: http://localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -34,5 +34,5 @@ spring:
         spring.json.trusted.packages: "*"
 
 payment-service:
-  base-url: http://localhost:8082
+  base-url: ${PAYMENT_SERVICE_URL}
 

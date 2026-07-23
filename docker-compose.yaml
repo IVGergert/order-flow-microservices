@@ -1,6 +1,74 @@
 services:
+
+  order-service:
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    container_name: order-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ORDER_DB_URL=jdbc:postgresql://order-db:5432/${ORDER_DB_NAME}
+      - PAYMENT_SERVICE_URL=http://payment-service:8082
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - order-flow-network
+    depends_on:
+      order-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    container_name: payment-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - PAYMENT_DB_URL=jdbc:postgresql://payment-db:5432/${PAYMENT_DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - order-flow-network
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  delivery-service:
+    build:
+      context: .
+      dockerfile: delivery-service/Dockerfile
+    container_name: delivery-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - DELIVERY_DB_URL=jdbc:postgresql://delivery-db:5432/${DELIVERY_DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - order-flow-network
+    depends_on:
+      delivery-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
   order-db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: order-db
     restart: unless-stopped
     environment:
@@ -20,7 +88,7 @@ services:
       retries: 5
 
   payment-db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: payment-db
     restart: unless-stopped
     environment:
@@ -40,7 +108,7 @@ services:
       retries: 5
 
   delivery-db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: delivery-db
     restart: unless-stopped
     environment:
@@ -80,6 +148,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    networks:
+      - order-flow-network
     healthcheck:
       test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list" ]
       interval: 10s
