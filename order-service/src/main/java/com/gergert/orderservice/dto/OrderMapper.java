@@ -3,7 +3,10 @@ package com.gergert.orderservice.dto;
 import com.gergert.orderservice.entity.Order;
 import org.mapstruct.*;
 
-@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        componentModel = MappingConstants.ComponentModel.SPRING
+)
+
 public interface OrderMapper {
     Order toEntity(CreateOrderRequestDto requestDto);
 

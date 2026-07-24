@@ -2,5 +2,6 @@ package com.gergert.deliveryservice.entity;
 
 public enum CourierStatus {
     AVAILABLE,
-    BUSY
+    ON_THE_WAY_TO_RESTAURANT,
+    ON_THE_WAY_TO_CUSTOMER
 }

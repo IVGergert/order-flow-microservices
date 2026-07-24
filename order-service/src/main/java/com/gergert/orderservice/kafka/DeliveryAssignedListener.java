@@ -1,9 +1,10 @@
-package com.gergert.orderservice.listener;
+package com.gergert.orderservice.kafka;
 
 import com.gergert.common.dto.kafka.DeliveryAssignedEventDto;
 import com.gergert.orderservice.entity.Order;
 import com.gergert.orderservice.entity.OrderStatus;
 import com.gergert.orderservice.repository.OrderRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -17,21 +18,21 @@ import org.springframework.web.server.ResponseStatusException;
 public class DeliveryAssignedListener {
     private final OrderRepository orderRepository;
 
+    @Transactional
     @KafkaListener(
-            topics = "${kafka.topics.delivery-events}",
+            topics = "${kafka.topics.delivery-assigned-events}",
             groupId = "order-group"
     )
 
     public void handle(DeliveryAssignedEventDto eventDto) {
+        log.info("Received DeliveryAssignedEvent: orderId={}", eventDto.orderId());
 
         Order order = orderRepository.findById(eventDto.orderId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Entity with id `%s` not found".formatted(eventDto.orderId())
-                ));
+                .orElseThrow(() -> new IllegalArgumentException(("Order with id %d not " +
+                        "found").formatted(eventDto.orderId())));
 
         if (order.getOrderStatus() == OrderStatus.DELIVERY_ASSIGNED) {
-            log.info("Order {} already in DELIVERY_ASSIGNED status, skipping", eventDto.orderId());
+            log.info("Order {} already in DELIVERY_ASSIGNED status", eventDto.orderId());
             return;
         }
 

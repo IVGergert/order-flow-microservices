@@ -16,6 +16,10 @@ public class Delivery {
     @Column (name = "id", nullable = false)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_status")
+    private DeliveryStatus deliveryStatus;
+
     @Column(name = "order_id", unique = true)
     private Long orderId;
 

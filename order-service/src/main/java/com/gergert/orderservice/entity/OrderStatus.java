@@ -2,8 +2,10 @@ package com.gergert.orderservice.entity;
 
 public enum OrderStatus {
     PENDING_PAYMENT,
-    PAID,
     PAYMENT_FAILED,
+    PAID,
     DELIVERY_ASSIGNED,
-    DELIVERED
+    IN_DELIVERY,
+    DELIVERED,
+    CANCELLED
 }

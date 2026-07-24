@@ -12,6 +12,7 @@ import com.gergert.orderservice.entity.OrderItem;
 import com.gergert.orderservice.entity.OrderStatus;
 import com.gergert.orderservice.repository.OrderRepository;
 import com.gergert.orderservice.service.OrderService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,8 +28,8 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 @Service
 public class OrderServiceImpl implements OrderService {
-    @Value("${kafka.topics.order-events}")
-    private String orderEventsTopic;
+    @Value("${kafka.topics.order-paid-events}")
+    private String orderPaidEventTopic;
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
@@ -36,6 +37,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
+    @Transactional
     public Order processPayment(Long id, OrderPaymentRequestDto requestDto){
         var entity = getOrderOrThrow(id);
 
@@ -63,10 +65,10 @@ public class OrderServiceImpl implements OrderService {
                     .amount(savedOrder.getTotalAmount())
                     .build();
 
-            log.info("Sending OrderPaidEvent for orderId={}", savedOrder.getId());
+            log.info("Sending OrderPaidEvent to Kafka for orderId={}", savedOrder.getId());
 
             kafkaTemplate.send(
-                    orderEventsTopic,
+                    orderPaidEventTopic,
                     savedOrder.getId().toString(),
                     event
             );

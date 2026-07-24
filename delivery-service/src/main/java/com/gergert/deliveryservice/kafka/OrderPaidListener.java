@@ -14,7 +14,7 @@ public class OrderPaidListener {
     private final DeliveryService deliveryService;
 
     @KafkaListener(
-            topics = "${kafka.topics.order-events}",
+            topics = "${kafka.topics.order-paid-events}",
             groupId = "delivery-group"
     )
     public void handle(OrderPaidEventDto eventDto){

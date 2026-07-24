@@ -12,6 +12,7 @@ import org.mapstruct.ReportingPolicy;
         componentModel = MappingConstants.ComponentModel.SPRING,
         unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
+
 public interface PaymentMapper {
     Payment toEntity(CreatePaymentRequestDto requestDto);
 

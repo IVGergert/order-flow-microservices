@@ -39,8 +39,10 @@ spring:
 
 kafka:
   topics:
-    order-events: order.events
-    delivery-events: delivery.events
+    order-paid-events: "order-paid-topic"
+    delivery-assigned-events: "delivery-assigned-topic"
+    order-picked-up-events: "order-picked-up-topic"
+    delivery-completed-events: "delivery-completed-topic"
 
 payment-service:
   base-url: ${PAYMENT_SERVICE_URL}
