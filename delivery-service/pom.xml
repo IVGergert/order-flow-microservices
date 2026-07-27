@@ -5,7 +5,7 @@
 
     <parent>
         <groupId>com.gergert</groupId>
-        <artifactId>order-flow-microservices</artifactId>
+        <artifactId>food-delivery</artifactId>
         <version>1.0.0</version>
     </parent>
 
@@ -83,7 +83,6 @@
 
     <build>
         <plugins>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -93,8 +92,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-
         </plugins>
     </build>
-
 </project>

@@ -56,3 +56,6 @@ management:
 logging:
   level:
     org.springframework.kafka.listener.KafkaMessageListenerContainer: Warn
+
+jwt:
+  secret: ${JWT_SECRET}

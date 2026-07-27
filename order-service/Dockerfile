@@ -6,8 +6,8 @@ WORKDIR /build
 COPY pom.xml ./
 COPY common-libs/pom.xml common-libs/pom.xml
 COPY order-service/pom.xml order-service/pom.xml
-COPY payment-service/pom.xml payment-service/pom.xml
 COPY delivery-service/pom.xml delivery-service/pom.xml
+COPY payment-service/pom.xml payment-service/pom.xml
 
 RUN mvn dependency:go-offline -pl common-libs,order-service -am -B -q
 
@@ -18,6 +18,8 @@ RUN mvn package -pl common-libs,order-service -am -DskipTests -B -q
 
 # Run
 FROM eclipse-temurin:17-jre-alpine
+
+RUN apk add --no-cache curl
 
 WORKDIR /app
 

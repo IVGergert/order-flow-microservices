@@ -5,7 +5,7 @@
 
 	<parent>
 		<groupId>com.gergert</groupId>
-		<artifactId>order-flow-microservices</artifactId>
+		<artifactId>food-delivery</artifactId>
 		<version>1.0.0</version>
 	</parent>
 
@@ -14,6 +14,10 @@
 	<description>order-service</description>
 
 	<dependencies>
+		<dependency>
+			<groupId>com.gergert</groupId>
+			<artifactId>common-libs</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -68,28 +72,18 @@
 			<artifactId>spring-kafka-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>com.gergert</groupId>
-			<artifactId>common-libs</artifactId>
-		</dependency>
-
 	</dependencies>
 
 	<build>
 		<plugins>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 			</plugin>
-
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
-
 		</plugins>
 	</build>
-
 </project>

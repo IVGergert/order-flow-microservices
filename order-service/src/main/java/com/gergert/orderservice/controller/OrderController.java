@@ -19,23 +19,16 @@ public class OrderController {
 
     @PostMapping
     public OrderDto create(@RequestBody CreateOrderRequestDto requestDto) {
-        log.info("Creating order: {}", requestDto);
+        log.info("Create order with id = {}", requestDto);
         var saved = orderService.create(requestDto);
         return orderMapper.toOrderDto(saved);
-    }
-
-    @GetMapping("/{id}")
-    public OrderDto getOne(@PathVariable Long id) {
-        log.info("Retrieving order with id {}", id);
-        var found = orderService.getOrderOrThrow(id);
-        return orderMapper.toOrderDto(found);
     }
 
     @PostMapping("/{id}/pay")
     public OrderDto payOrder(@PathVariable Long id,
                              @RequestBody OrderPaymentRequestDto requestDto) {
         log.info("Paying order with id={}, request={}", id, requestDto);
-        var entity = orderService.processPayment(id, requestDto);
+        var entity = orderService.processPayment(id,requestDto);
         return orderMapper.toOrderDto(entity);
     }
 }

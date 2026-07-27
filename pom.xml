@@ -1,7 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>com.gergert</groupId>
-    <artifactId>order-flow-microservices</artifactId>
+    <artifactId>food-delivery</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
@@ -35,8 +35,8 @@
     </properties>
 
     <dependencyManagement>
-        <dependencies>
 
+        <dependencies>
             <dependency>
                 <groupId>com.gergert</groupId>
                 <artifactId>common-libs</artifactId>
@@ -54,7 +54,6 @@
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc-openapi.version}</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
@@ -62,6 +61,7 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
@@ -91,10 +91,12 @@
                             </path>
 
                         </annotationProcessorPaths>
+
                     </configuration>
                 </plugin>
 
                 <plugin>
+
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
 
@@ -106,10 +108,11 @@
                             </exclude>
                         </excludes>
                     </configuration>
+
                 </plugin>
 
             </plugins>
         </pluginManagement>
-    </build>
 
+    </build>
 </project>

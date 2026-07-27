@@ -23,7 +23,12 @@ services:
         condition: service_healthy
       payment-service:
         condition: service_healthy
-
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
 
   payment-service:
     build:
@@ -69,6 +74,54 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      - AUTH_DB_URL=jdbc:postgresql://auth-db:5432/${AUTH_DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_MS_JWT_TOKEN=${JWT_EXPIRATION_MS_JWT_TOKEN}
+      - JWT_EXPIRATION_MS_REFRESH_TOKEN=${JWT_EXPIRATION_MS_REFRESH_TOKEN}
+    networks:
+      - order-flow-network
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+
+#  frontend:
+#    build:
+#      context: ./frontend
+#      dockerfile: Dockerfile
+#    container_name: frontend-nginx
+#    restart: unless-stopped
+#    ports:
+#      - "8000:80"
+#    networks:
+#      - order-flow-network
+#    depends_on:
+#      - order-service
+#      - delivery-service
+#      - payment-service
 
   order-db:
     image: postgres:17-alpine
@@ -130,6 +183,26 @@ services:
       timeout: 5s
       retries: 5
 
+  auth-db:
+    image: postgres:17-alpine
+    container_name: auth-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${AUTH_DB_PORT}:5432"
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    networks:
+      - order-flow-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${AUTH_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   kafka:
     image: confluentinc/cp-kafka:8.1.1
     container_name: kafka-broker
@@ -169,4 +242,5 @@ volumes:
   postgres_order_data:
   postgres_payment_data:
   postgres_delivery_data:
+  postgres_auth_data:
   kafka_data:

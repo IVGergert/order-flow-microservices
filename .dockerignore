@@ -13,6 +13,7 @@ mvnw.cmd
 **/target/
 
 # IDE
+README.md
 .idea/
 *.iml
 *.iws

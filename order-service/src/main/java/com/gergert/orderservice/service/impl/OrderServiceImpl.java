@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -38,25 +39,26 @@ public class OrderServiceImpl implements OrderService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Transactional
+    @Override
     public Order processPayment(Long id, OrderPaymentRequestDto requestDto){
-        var entity = getOrderOrThrow(id);
+        var order = getOrderOrThrow(id);
 
-        if (!entity.getOrderStatus().equals(OrderStatus.PENDING_PAYMENT)){
+        if (!order.getOrderStatus().equals(OrderStatus.PENDING_PAYMENT)){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Order must be in orderStatus PENDING_PAYMENT");
         }
 
         var response = paymentHttpClient.createPayment(CreatePaymentRequestDto.builder()
                         .orderId(id)
                         .paymentMethod(requestDto.paymentMethod())
-                        .amount(entity.getTotalAmount())
+                        .amount(order.getTotalAmount())
                 .build());
 
         var status = PaymentStatus.PAYMENT_SUCCEEDED.equals(response.paymentStatus())
                 ? OrderStatus.PAID
                 : OrderStatus.PAYMENT_FAILED;
 
-        entity.setOrderStatus(status);
-        Order savedOrder = orderRepository.save(entity);
+        order.setOrderStatus(status);
+        Order savedOrder = orderRepository.save(order);
 
         if (status == OrderStatus.PAID){
             OrderPaidEventDto event = OrderPaidEventDto.builder()
@@ -77,13 +79,20 @@ public class OrderServiceImpl implements OrderService {
         return savedOrder;
     }
 
+    @Override
     public Order create(CreateOrderRequestDto request) {
-        var entity = orderMapper.toEntity(request);
-        calculatePricingForOrder(entity);
-        entity.setOrderStatus(OrderStatus.PENDING_PAYMENT);
-        return orderRepository.save(entity);
+        var order = orderMapper.toEntity(request);
+
+        calculatePricingForOrder(order);
+        order.setOrderStatus(OrderStatus.PENDING_PAYMENT);
+
+        Order savedOrder = orderRepository.save(order);
+        log.info("Order was created with id={}", savedOrder.getId());
+
+        return savedOrder;
     }
 
+    @Override
     public Order getOrderOrThrow(Long id) {
         var orderItemOptional = orderRepository.findById(id);
         return orderItemOptional.orElseThrow(() ->
