@@ -4,6 +4,7 @@ import com.gergert.common.dto.kafka.DeliveryAssignedEventDto;
 import com.gergert.common.dto.kafka.OrderDeliveredEventDto;
 import com.gergert.common.dto.kafka.OrderPaidEventDto;
 import com.gergert.common.dto.kafka.OrderPickedUpEventDto;
+import com.gergert.deliveryservice.dto.DeliveryResponseDto;
 import com.gergert.deliveryservice.entity.*;
 import com.gergert.deliveryservice.exception.NoCourierAvailableException;
 import com.gergert.deliveryservice.repository.CourierRepository;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -90,8 +92,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     public void pickUpOrder(Long orderId, Long courierUserId) {
         Delivery delivery = deliveryRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Delivery not found for orderId=" + orderId)
+                        HttpStatus.NOT_FOUND, "Delivery not found for orderId=" + orderId)
                 );
 
         if (!delivery.getCourier().getId().equals(courierUserId)) {
@@ -134,5 +135,22 @@ public class DeliveryServiceImpl implements DeliveryService {
         log.info("Order {} delivered successfully by courier {}.", orderId, courier.getName());
 
         kafkaTemplate.send(deliveryCompletedTopic, orderId.toString(), new OrderDeliveredEventDto(orderId));
+    }
+
+    @Override
+    public List<DeliveryResponseDto> getDeliveriesByCourierUserId(Long courierUserId) {
+        log.info("Fetching deliveries for courier with userId={}", courierUserId);
+
+        List<Delivery> deliveries = deliveryRepository.findAllByCourier_UserId(courierUserId);
+
+        return deliveries.stream()
+                .map(delivery -> DeliveryResponseDto.builder()
+                        .id(delivery.getId())
+                        .orderId(delivery.getOrderId())
+                        .deliveryStatus(delivery.getDeliveryStatus())
+                        .etaMinutes(delivery.getEtaMinutes())
+                        .courierId(delivery.getCourier() != null ? delivery.getCourier().getId() : null)
+                        .build())
+                .toList();
     }
 }

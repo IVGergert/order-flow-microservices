@@ -23,7 +23,7 @@ public class Delivery {
     @Column(name = "order_id", unique = true)
     private Long orderId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "courier_id")
     private Courier courier;
 

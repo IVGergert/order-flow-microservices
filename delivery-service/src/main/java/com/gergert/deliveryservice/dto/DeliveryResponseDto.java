@@ -1,0 +1,14 @@
+package com.gergert.deliveryservice.dto;
+
+import com.gergert.deliveryservice.entity.DeliveryStatus;
+import lombok.Builder;
+
+@Builder
+public record DeliveryResponseDto(
+        Long id,
+        Long orderId,
+        DeliveryStatus deliveryStatus,
+        Integer etaMinutes,
+        Long courierId
+) {
+}

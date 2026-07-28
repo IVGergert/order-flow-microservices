@@ -8,6 +8,7 @@ import com.gergert.authservice.repository.UserRepository;
 import com.gergert.authservice.security.jwt.JwtTokenService;
 import com.gergert.authservice.service.AuthService;
 import com.gergert.common.dto.jwt.JwtClaimsDto;
+import com.gergert.common.enums.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,65 +39,58 @@ public class AuthServiceImpl implements AuthService {
                 )
         );
 
-        log.info("User authentication successful for email: {}", loginDto.email());
-
         User user = userRepository.findByEmail(loginDto.email())
                 .orElseThrow(() -> {
                     log.error("Authenticated user not found in database: {}", loginDto.email());
                     return new UsernameNotFoundException("User with email " + loginDto.email() + " not found");
                 });
 
-        JwtClaimsDto claims = new JwtClaimsDto(
-                user.getId(),
-                user.getEmail(),
-                user.getRole()
-        );
-
         log.info("User logged in successfully. User ID: {}, email: {}", user.getId(), user.getEmail());
 
-        return buildAuthResponse(claims);
+        return buildAuthResponse(user);
     }
 
     @Override
     @Transactional
     public AuthResponseDto register(RegisterRequestDto registerDto) {
+        log.info("User registration attempt for email: {}", registerDto.email());
 
-        log.info("Registration attempt for user with email: {}", registerDto.email());
+        validateRegistration(registerDto);
 
+        User savedUser = createUser(registerDto, Role.ROLE_CUSTOMER);
+        log.info("Customer registered successfully. User ID: {}", savedUser.getId());
+
+        return buildAuthResponse(savedUser);
+    }
+
+    private void validateRegistration(RegisterRequestDto registerDto) {
         if (!registerDto.password().equals(registerDto.confirmPassword())) {
-            log.warn("Registration failed. Passwords do not match for email: {}", registerDto.email());
+            log.warn("Passwords do not match for email: {}", registerDto.email());
             throw new PasswordMismatchException("Passwords do not match for email: " + registerDto.email());
         }
 
         if (userRepository.existsByEmail(registerDto.email())) {
-            log.warn("Registration failed. User with email already exists: {}", registerDto.email());
+            log.warn("User with email already exists: {}", registerDto.email());
             throw new UserAlreadyExistsException("User with email " + registerDto.email() + " already exists");
         }
+    }
 
+    private User createUser(RegisterRequestDto registerDto, Role role) {
         User user = User.builder()
                 .email(registerDto.email())
                 .password(passwordEncoder.encode(registerDto.password()))
-                .role(registerDto.role())
+                .role(role)
                 .build();
 
-        User savedUser = userRepository.save(user);
-
-        log.info("User registered successfully. User ID: {}, email: {}, role: {}",
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getRole()
-        );
-
-        JwtClaimsDto claims = new JwtClaimsDto(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getRole()
-        );
-
-        return buildAuthResponse(claims);
+        return userRepository.save(user);
     }
 
-    private AuthResponseDto buildAuthResponse(JwtClaimsDto claims) {
+    private AuthResponseDto buildAuthResponse(User user) {
+        JwtClaimsDto claims = new JwtClaimsDto(
+                user.getId(),
+                user.getEmail(),
+                user.getRole()
+        );
 
         log.debug("Generating JWT tokens for user ID: {}", claims.userId());
 

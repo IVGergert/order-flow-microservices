@@ -16,6 +16,9 @@ public class Courier {
     @Column(name = "id", nullable = false)
     private Long id;
 
+    @Column(name = "user_id", nullable = false, unique = true)
+    private Long userId;
+
     @Column(name = "name")
     private String name;
 

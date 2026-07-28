@@ -1,7 +1,10 @@
 package com.gergert.deliveryservice.controller;
 
 import com.gergert.common.dto.jwt.JwtClaimsDto;
+import com.gergert.deliveryservice.dto.DeliveryResponseDto;
+import com.gergert.deliveryservice.entity.Courier;
 import com.gergert.deliveryservice.entity.Delivery;
+import com.gergert.deliveryservice.repository.CourierRepository;
 import com.gergert.deliveryservice.repository.DeliveryRepository;
 import com.gergert.deliveryservice.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
@@ -11,12 +14,20 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/deliveries")
 @RequiredArgsConstructor
 public class DeliveryController {
     private final DeliveryService deliveryService;
     private final DeliveryRepository deliveryRepository;
+
+    @GetMapping("/my")
+    public ResponseEntity<List<DeliveryResponseDto>> getMyDeliveries(@AuthenticationPrincipal JwtClaimsDto claims) {
+        List<DeliveryResponseDto> deliveries = deliveryService.getDeliveriesByCourierUserId(claims.userId());
+        return ResponseEntity.ok(deliveries);
+    }
 
     @GetMapping("/order/{orderId}")
     public ResponseEntity<Delivery> getDeliveryByOrderId(@PathVariable Long orderId,
