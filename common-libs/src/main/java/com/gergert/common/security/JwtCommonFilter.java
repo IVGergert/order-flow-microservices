@@ -1,6 +1,6 @@
-package com.gergert.authservice.security.jwt;
+package com.gergert.common.security;
 
-import com.gergert.authservice.dto.JwtClaimsDto;
+import com.gergert.common.dto.jwt.JwtClaimsDto;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,8 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -23,8 +21,9 @@ import java.util.Collections;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    private final JwtTokenService jwtTokenService;
+public class JwtCommonFilter extends OncePerRequestFilter {
+    private final JwtTokenValidator tokenValidator;
+
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -35,12 +34,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String jwtToken = getTokenFromRequest(request);
 
-            if (jwtToken != null && jwtTokenService.validateJwtToken(jwtToken)) {
+            if (jwtToken != null && tokenValidator.validateJwtToken(jwtToken)) {
 
-                if ("ACCESS".equals(jwtTokenService.getTokenType(jwtToken))) {
+                if ("ACCESS".equals(tokenValidator.getTokenType(jwtToken))) {
 
-                    JwtClaimsDto claims = jwtTokenService.getClaimsFromToken(jwtToken);
-
+                    JwtClaimsDto claims = tokenValidator.getClaimsFromToken(jwtToken);
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority(claims.role().name());
 
                     UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
@@ -48,8 +46,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             null,
                             Collections.singletonList(authority)
                     );
-
-                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
@@ -71,4 +67,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         return null;
     }
+
 }

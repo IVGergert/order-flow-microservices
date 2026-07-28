@@ -2,6 +2,7 @@ package com.gergert.authservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.gergert.common.enums.Role;
 
 @Entity
 @Getter

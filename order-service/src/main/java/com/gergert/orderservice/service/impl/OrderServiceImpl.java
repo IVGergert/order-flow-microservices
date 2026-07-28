@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -40,8 +39,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    public Order processPayment(Long id, OrderPaymentRequestDto requestDto){
+    public Order processPayment(Long id, OrderPaymentRequestDto requestDto, Long customerId){
         var order = getOrderOrThrow(id);
+
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only pay for your own orders");
+        }
 
         if (!order.getOrderStatus().equals(OrderStatus.PENDING_PAYMENT)){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Order must be in orderStatus PENDING_PAYMENT");
@@ -80,8 +83,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order create(CreateOrderRequestDto request) {
+    public Order create(CreateOrderRequestDto request, Long customerId) {
         var order = orderMapper.toEntity(request);
+
+        order.setCustomerId(customerId);
 
         calculatePricingForOrder(order);
         order.setOrderStatus(OrderStatus.PENDING_PAYMENT);

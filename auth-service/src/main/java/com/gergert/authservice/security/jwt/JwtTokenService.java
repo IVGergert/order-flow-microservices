@@ -1,10 +1,9 @@
 package com.gergert.authservice.security.jwt;
 
-import com.gergert.authservice.dto.JwtClaimsDto;
-import com.gergert.authservice.entity.Role;
+
+import com.gergert.common.dto.jwt.JwtClaimsDto;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SecurityException;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,47 +57,5 @@ public class JwtTokenService {
                 .expiration(expirationDate)
                 .signWith(secret)
                 .compact();
-    }
-
-    public boolean validateJwtToken(String jwtToken) {
-        try {
-            parseClaims(jwtToken);
-            return true;
-
-        } catch (ExpiredJwtException expException) {
-            log.error("Expired JwtException", expException);
-        } catch (UnsupportedJwtException expException) {
-            log.error("Unsupported JwtException", expException);
-        } catch (MalformedJwtException expException) {
-            log.error("Malformed JwtException", expException);
-        } catch (SecurityException expException) {
-            log.error("Security Exception", expException);
-        } catch (Exception expException) {
-            log.error("Invalid jwt token", expException);
-        }
-
-        return false;
-    }
-
-    public JwtClaimsDto getClaimsFromToken(String jwtToken) {
-        Claims claims = parseClaims(jwtToken);
-
-        return new JwtClaimsDto(
-                claims.get("userId", Long.class),
-                claims.getSubject(),
-                Role.valueOf(claims.get("role", String.class))
-        );
-    }
-
-    public String getTokenType(String jwtToken) {
-        return parseClaims(jwtToken).get("type", String.class);
-    }
-
-    private Claims parseClaims(String jwtToken) {
-        return Jwts.parser()
-                .verifyWith(secret)
-                .build()
-                .parseSignedClaims(jwtToken)
-                .getPayload();
     }
 }

@@ -1,11 +1,12 @@
 package com.gergert.authservice.controller;
 
 import com.gergert.authservice.dto.AuthResponseDto;
-import com.gergert.authservice.dto.JwtClaimsDto;
 import com.gergert.authservice.dto.LoginRequestDto;
 import com.gergert.authservice.dto.RegisterRequestDto;
 import com.gergert.authservice.security.jwt.JwtTokenService;
 import com.gergert.authservice.service.AuthService;
+import com.gergert.common.dto.jwt.JwtClaimsDto;
+import com.gergert.common.security.JwtTokenValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final JwtTokenValidator jwtTokenValidator;
     private final JwtTokenService jwtTokenService;
 
     @PostMapping("/login")
@@ -38,15 +40,15 @@ public class AuthController {
     public ResponseEntity<AuthResponseDto> refresh(@RequestHeader("Authorization") String bearerToken) {
         String refreshToken = bearerToken.substring(7);
 
-        if (!jwtTokenService.validateJwtToken(refreshToken)) {
+        if (!jwtTokenValidator.validateJwtToken(refreshToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        if (!"REFRESH".equals(jwtTokenService.getTokenType(refreshToken))) {
+        if (!"REFRESH".equals(jwtTokenValidator.getTokenType(refreshToken))) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        JwtClaimsDto claims = jwtTokenService.getClaimsFromToken(refreshToken);
+        JwtClaimsDto claims = jwtTokenValidator.getClaimsFromToken(refreshToken);
 
         AuthResponseDto response = AuthResponseDto.builder()
                 .accessJwtToken(jwtTokenService.generateAccessJwtToken(claims))
@@ -64,15 +66,15 @@ public class AuthController {
     public ResponseEntity<JwtClaimsDto> validate(@RequestHeader("Authorization") String bearerToken) {
         String token = extractToken(bearerToken);
 
-        if (!jwtTokenService.validateJwtToken(token)) {
+        if (!jwtTokenValidator.validateJwtToken(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        if (!"ACCESS".equals(jwtTokenService.getTokenType(token))) {
+        if (!"ACCESS".equals(jwtTokenValidator.getTokenType(token))) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return ResponseEntity.ok(jwtTokenService.getClaimsFromToken(token));
+        return ResponseEntity.ok(jwtTokenValidator.getClaimsFromToken(token));
     }
 
     private String extractToken(String bearerToken) {

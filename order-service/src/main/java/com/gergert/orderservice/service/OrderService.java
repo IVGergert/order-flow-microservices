@@ -8,7 +8,7 @@ import com.gergert.orderservice.entity.Order;
 import java.util.List;
 
 public interface OrderService {
-    Order processPayment(Long id, OrderPaymentRequestDto requestDto);
-    Order create(CreateOrderRequestDto request);
+    Order processPayment(Long id, OrderPaymentRequestDto requestDto, Long customerId);
+    Order create(CreateOrderRequestDto request, Long customerId);
     Order getOrderOrThrow(Long id);
 }

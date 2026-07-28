@@ -4,6 +4,6 @@ import com.gergert.common.dto.kafka.OrderPaidEventDto;
 
 public interface DeliveryService {
     void createDelivery(OrderPaidEventDto eventDto);
-    void pickUpOrder(Long orderId);
-    void completeDelivery(Long orderId);
+    void pickUpOrder(Long orderId, Long courierUserId);
+    void completeDelivery(Long orderId, Long courierUserId);
 }

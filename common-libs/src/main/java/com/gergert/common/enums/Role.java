@@ -1,4 +1,4 @@
-package com.gergert.authservice.entity;
+package com.gergert.common.enums;
 
 public enum Role {
     ROLE_CUSTOMER,

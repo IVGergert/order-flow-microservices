@@ -3,13 +3,20 @@ FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
+COPY pom.xml ./
+COPY common-libs/pom.xml common-libs/pom.xml
 COPY auth-service/pom.xml auth-service/pom.xml
+COPY order-service/pom.xml order-service/pom.xml
+COPY delivery-service/pom.xml delivery-service/pom.xml
+COPY payment-service/pom.xml payment-service/pom.xml
 
-RUN mvn dependency:go-offline -f auth-service -B -q
+RUN mvn dependency:go-offline -pl common-libs,auth-service -am -B -q
 
+COPY common-libs/src common-libs/src
 COPY auth-service/src auth-service/src
 
-RUN mvn clean package -f auth-service/pom.xml -DskipTests -B -q
+RUN mvn clean package -pl common-libs,auth-service -am -DskipTests -B -q
+
 
 # Run
 FROM eclipse-temurin:17-jre-alpine

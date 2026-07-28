@@ -1,5 +1,6 @@
 package com.gergert.orderservice.controller;
 
+import com.gergert.common.dto.jwt.JwtClaimsDto;
 import com.gergert.orderservice.dto.CreateOrderRequestDto;
 import com.gergert.orderservice.dto.OrderDto;
 import com.gergert.orderservice.dto.OrderMapper;
@@ -7,6 +8,7 @@ import com.gergert.common.dto.OrderPaymentRequestDto;
 import com.gergert.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -18,17 +20,21 @@ public class OrderController {
     private final OrderMapper orderMapper;
 
     @PostMapping
-    public OrderDto create(@RequestBody CreateOrderRequestDto requestDto) {
-        log.info("Create order with id = {}", requestDto);
-        var saved = orderService.create(requestDto);
+    public OrderDto create(@RequestBody CreateOrderRequestDto requestDto,
+                           @AuthenticationPrincipal JwtClaimsDto claims) {
+
+        log.info("Create order request by user userId={}, email={}", claims.userId(), claims.email());
+        var saved = orderService.create(requestDto, claims.userId());
         return orderMapper.toOrderDto(saved);
     }
 
     @PostMapping("/{id}/pay")
     public OrderDto payOrder(@PathVariable Long id,
-                             @RequestBody OrderPaymentRequestDto requestDto) {
+                             @RequestBody OrderPaymentRequestDto requestDto,
+                             @AuthenticationPrincipal JwtClaimsDto claims) {
+
         log.info("Paying order with id={}, request={}", id, requestDto);
-        var entity = orderService.processPayment(id,requestDto);
+        var entity = orderService.processPayment(id, requestDto, claims.userId());
         return orderMapper.toOrderDto(entity);
     }
 }

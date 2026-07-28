@@ -7,7 +7,7 @@ import com.gergert.authservice.exception.UserAlreadyExistsException;
 import com.gergert.authservice.repository.UserRepository;
 import com.gergert.authservice.security.jwt.JwtTokenService;
 import com.gergert.authservice.service.AuthService;
-import com.gergert.authservice.dto.JwtClaimsDto;
+import com.gergert.common.dto.jwt.JwtClaimsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;

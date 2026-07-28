@@ -1,6 +1,6 @@
-package com.gergert.authservice.dto;
+package com.gergert.common.dto.jwt;
 
-import com.gergert.authservice.entity.Role;
+import com.gergert.common.enums.Role;
 
 public record JwtClaimsDto(
         Long userId,

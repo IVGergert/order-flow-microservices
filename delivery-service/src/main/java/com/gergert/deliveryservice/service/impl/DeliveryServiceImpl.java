@@ -87,12 +87,16 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Transactional
     @Override
-    public void pickUpOrder(Long orderId) {
+    public void pickUpOrder(Long orderId, Long courierUserId) {
         Delivery delivery = deliveryRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Delivery not found for orderId=" + orderId)
                 );
+
+        if (!delivery.getCourier().getId().equals(courierUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot pick up someone else's order!");
+        }
 
         Courier courier = delivery.getCourier();
 
@@ -109,12 +113,15 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Transactional
     @Override
-    public void completeDelivery(Long orderId) {
+    public void completeDelivery(Long orderId, Long courierUserId) {
         Delivery delivery = deliveryRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Delivery not found for orderId=" + orderId)
+                        HttpStatus.NOT_FOUND, "Delivery not found for orderId=" + orderId)
                 );
+
+        if (!delivery.getCourier().getId().equals(courierUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot complete someone else's delivery!");
+        }
 
         Courier courier = delivery.getCourier();
 

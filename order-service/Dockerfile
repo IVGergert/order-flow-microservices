@@ -5,6 +5,7 @@ WORKDIR /build
 
 COPY pom.xml ./
 COPY common-libs/pom.xml common-libs/pom.xml
+COPY auth-service/pom.xml auth-service/pom.xml
 COPY order-service/pom.xml order-service/pom.xml
 COPY delivery-service/pom.xml delivery-service/pom.xml
 COPY payment-service/pom.xml payment-service/pom.xml
