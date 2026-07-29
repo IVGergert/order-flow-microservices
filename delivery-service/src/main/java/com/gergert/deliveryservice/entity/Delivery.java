@@ -3,13 +3,17 @@ package com.gergert.deliveryservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "deliveries")
+@Table(name = "deliveries", indexes = {
+        @Index(name = "idx_delivery_status", columnList = "delivery_status")
+})
 public class Delivery {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -27,6 +31,12 @@ public class Delivery {
     @JoinColumn(name = "courier_id")
     private Courier courier;
 
+    @Column(name = "address")
+    private String address;
+
     @Column(name = "eta_minutes")
     private Integer etaMinutes;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
 }

@@ -1,57 +1,71 @@
 package com.gergert.deliveryservice.controller;
 
 import com.gergert.common.dto.jwt.JwtClaimsDto;
+import com.gergert.deliveryservice.dto.CourierStatisticsResponseDto;
 import com.gergert.deliveryservice.dto.DeliveryResponseDto;
-import com.gergert.deliveryservice.entity.Courier;
-import com.gergert.deliveryservice.entity.Delivery;
-import com.gergert.deliveryservice.repository.CourierRepository;
-import com.gergert.deliveryservice.repository.DeliveryRepository;
 import com.gergert.deliveryservice.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/deliveries")
 @RequiredArgsConstructor
 public class DeliveryController {
     private final DeliveryService deliveryService;
-    private final DeliveryRepository deliveryRepository;
 
-    @GetMapping("/my")
+    @GetMapping("/current")
+    public ResponseEntity<DeliveryResponseDto> getCurrentDelivery(@AuthenticationPrincipal JwtClaimsDto claims) {
+        Optional<DeliveryResponseDto> delivery = deliveryService.getCurrentDeliveryByCourierUserId(claims.userId());
+
+        return delivery.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+
+    }
+
+    @GetMapping("/statistics/today")
+    public ResponseEntity<CourierStatisticsResponseDto> getCompletedToday(@AuthenticationPrincipal JwtClaimsDto claims) {
+        return ResponseEntity.ok(deliveryService.getCompletedDeliveriesToday(claims.userId()));
+    }
+
+    @GetMapping("/history")
     public ResponseEntity<List<DeliveryResponseDto>> getMyDeliveries(@AuthenticationPrincipal JwtClaimsDto claims) {
-        List<DeliveryResponseDto> deliveries = deliveryService.getDeliveriesByCourierUserId(claims.userId());
-        return ResponseEntity.ok(deliveries);
+        return ResponseEntity.ok(deliveryService.getDeliveriesByCourierUserId(claims.userId()));
     }
 
     @GetMapping("/order/{orderId}")
-    public ResponseEntity<Delivery> getDeliveryByOrderId(@PathVariable Long orderId,
+    public ResponseEntity<DeliveryResponseDto> getDeliveryByOrderId(@PathVariable Long orderId,
                                                          @AuthenticationPrincipal JwtClaimsDto claims) {
 
-        Delivery delivery = deliveryRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Delivery not found for orderId=" + orderId));
-        return ResponseEntity.ok(delivery);
+        return ResponseEntity.ok(deliveryService.getDeliveryByOrderId(orderId, claims.userId()));
+    }
+
+    @PostMapping("/{orderId}/accept")
+    public ResponseEntity<DeliveryResponseDto> acceptDelivery(@PathVariable Long orderId,
+                                                              @AuthenticationPrincipal JwtClaimsDto claims) {
+        return ResponseEntity.ok(deliveryService.acceptDelivery(orderId, claims.userId()));
     }
 
     @PostMapping("/{orderId}/pickup")
-    public ResponseEntity<String> pickUpOrder(@PathVariable Long orderId,
+    public ResponseEntity<DeliveryResponseDto> pickUpOrder(@PathVariable Long orderId,
                                               @AuthenticationPrincipal JwtClaimsDto claims) {
-
-        deliveryService.pickUpOrder(orderId, claims.userId());
-        return ResponseEntity.ok("Order " + orderId + " picked up. On the way to customer!");
+        return ResponseEntity.ok(deliveryService.pickUpOrder(orderId, claims.userId()));
     }
 
     @PostMapping("/{orderId}/complete")
-    public ResponseEntity<String> completeDelivery(@PathVariable Long orderId,
+    public ResponseEntity<DeliveryResponseDto> completeDelivery(@PathVariable Long orderId,
                                                    @AuthenticationPrincipal JwtClaimsDto claims) {
+        return ResponseEntity.ok(deliveryService.completeDelivery(orderId, claims.userId()));
+    }
 
-        deliveryService.completeDelivery(orderId, claims.userId());
-        return ResponseEntity.ok("Order " + orderId + " delivered successfully!");
+    @GetMapping("/waiting")
+    public ResponseEntity<List<DeliveryResponseDto>> getWaitingDeliveries(@AuthenticationPrincipal JwtClaimsDto claims) {
+        return ResponseEntity.ok(deliveryService.getWaitingDeliveries(claims.userId()));
     }
 }

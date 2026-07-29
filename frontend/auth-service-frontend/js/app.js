@@ -70,7 +70,7 @@ async function onLogin(event) {
 
         if (!response.ok) {
             const errorMsg = await response.text();
-            throw new Error(errorMsg || "Ошибка входа");
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();
@@ -92,7 +92,7 @@ async function onRegister(event) {
     const confirmPassword = document.getElementById("regConfirmPassword").value;
 
     if (password !== confirmPassword) {
-        showAlert("Пароли не совпадают!");
+        showAlert("Password don't matching!");
         return;
     }
 
@@ -109,7 +109,7 @@ async function onRegister(event) {
 
         if (!response.ok) {
             const errorMsg = await response.text();
-            throw new Error(errorMsg || "Ошибка при регистрации");
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();

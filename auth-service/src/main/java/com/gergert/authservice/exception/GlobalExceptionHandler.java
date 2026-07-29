@@ -1,5 +1,6 @@
 package com.gergert.authservice.exception;
 
+import com.gergert.authservice.dto.ErrorResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,22 +13,22 @@ import org.springframework.security.core.AuthenticationException;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<String> handleAuthenticationException(AuthenticationException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed: Invalid email or password");
+    public ResponseEntity<ErrorResponseDto> handleAuthenticationException(AuthenticationException e) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
     }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<String> handleGenericException(UserAlreadyExistsException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    public ResponseEntity<ErrorResponseDto> handleUserAlreadyExists(UserAlreadyExistsException e) {
+        return buildResponse(HttpStatus.CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(PasswordMismatchException.class)
-    public ResponseEntity<String> handlePasswordMismatchException(PasswordMismatchException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    public ResponseEntity<ErrorResponseDto> handlePasswordMismatchException(PasswordMismatchException e) {
+        return buildResponse(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException e) {
+    public ResponseEntity<ErrorResponseDto> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -35,11 +36,17 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Validation failed");
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+        return buildResponse(HttpStatus.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGenericException(Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + e.getMessage());
+    public ResponseEntity<ErrorResponseDto> handleUserAlreadyExists(Exception e) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred: " + e.getMessage());
+    }
+
+    private ResponseEntity<ErrorResponseDto> buildResponse(HttpStatus status, String message) {
+        return ResponseEntity
+                .status(status)
+                .body(new ErrorResponseDto(message));
     }
 }

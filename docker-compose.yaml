@@ -13,6 +13,7 @@ services:
       - order-flow-network
     depends_on:
       - auth-frontend
+      - delivery-frontend
       - auth-service
       - order-service
       - payment-service
@@ -25,6 +26,15 @@ services:
       context: ./frontend/auth-service-frontend
       dockerfile: Dockerfile
     container_name: auth-frontend
+    restart: unless-stopped
+    networks:
+      - order-flow-network
+
+  delivery-frontend:
+    build:
+      context: ./frontend/delivery-service-frontend
+      dockerfile: Dockerfile
+    container_name: delivery-frontend
     restart: unless-stopped
     networks:
       - order-flow-network

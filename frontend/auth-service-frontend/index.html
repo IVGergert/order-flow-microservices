@@ -10,6 +10,7 @@
 <body>
   <div class="auth-container">
     <div class="auth-card">
+
       <div class="brand">
         <h1>Food Delivery</h1>
       </div>
@@ -18,6 +19,7 @@
         <button id="btnCustomer" class="role-btn active" onclick="selectRole('CUSTOMER')">
           Я Клиент
         </button>
+
         <button id="btnCourier" class="role-btn" onclick="selectRole('COURIER')">
           Я Курьер
         </button>
@@ -45,6 +47,7 @@
       </form>
 
       <form id="registerForm" class="hidden" onsubmit="onRegister(event)" novalidate>
+
         <div class="form-group">
           <label>Email</label>
           <input type="email" id="regEmail" placeholder="customer@food.com" required>

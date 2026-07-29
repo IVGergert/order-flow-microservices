@@ -8,7 +8,9 @@ public record DeliveryResponseDto(
         Long id,
         Long orderId,
         DeliveryStatus deliveryStatus,
-        Integer etaMinutes,
-        Long courierId
+        Long courierId,
+        String courierName,
+        String address,
+        Integer etaMinutes
 ) {
 }

@@ -4,9 +4,10 @@ import com.gergert.common.dto.kafka.DeliveryAssignedEventDto;
 import com.gergert.common.dto.kafka.OrderDeliveredEventDto;
 import com.gergert.common.dto.kafka.OrderPaidEventDto;
 import com.gergert.common.dto.kafka.OrderPickedUpEventDto;
+import com.gergert.deliveryservice.dto.CourierStatisticsResponseDto;
+import com.gergert.deliveryservice.dto.DeliveryMapper;
 import com.gergert.deliveryservice.dto.DeliveryResponseDto;
 import com.gergert.deliveryservice.entity.*;
-import com.gergert.deliveryservice.exception.NoCourierAvailableException;
 import com.gergert.deliveryservice.repository.CourierRepository;
 import com.gergert.deliveryservice.repository.DeliveryRepository;
 import com.gergert.deliveryservice.service.DeliveryService;
@@ -19,7 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -30,6 +35,8 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final CourierRepository courierRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
+    private final DeliveryMapper deliveryMapper;
+
     @Value("${kafka.topics.delivery-assigned-events}")
     private String deliveryEventsTopic;
 
@@ -39,64 +46,97 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Value("${kafka.topics.delivery-completed-events}")
     private String deliveryCompletedTopic;
 
+    @Override
     @Transactional
     public void createDelivery(OrderPaidEventDto eventDto) {
 
-        if (deliveryRepository.findByOrderId(eventDto.orderId()).isPresent()){
-            log.info("Delivery already assigned for orderId={}, skipping", eventDto.orderId());
+        if (deliveryRepository.findByOrderId(eventDto.orderId()).isPresent()) {
+            log.info("Delivery already assigned for order {}", eventDto.orderId());
             return;
         }
 
-        Courier courier = courierRepository
-                .findFirstByCourierStatus(CourierStatus.AVAILABLE)
-                .orElseThrow(() -> {
-                    log.warn("No available couriers for orderId={}. Retrying...", eventDto.orderId());
-                    return new NoCourierAvailableException(eventDto.orderId());
-                });
-
-        courier.setCourierStatus(CourierStatus.ON_THE_WAY_TO_RESTAURANT);
-        courierRepository.save(courier);
-
         Delivery delivery = Delivery.builder()
                 .orderId(eventDto.orderId())
-                .courier(courier)
-                .deliveryStatus(DeliveryStatus.COURIER_ASSIGNED)
-                .etaMinutes(ThreadLocalRandom.current().nextInt(20,60))
+                .deliveryStatus(DeliveryStatus.WAITING_FOR_COURIER)
+                .address(eventDto.address())
+                .etaMinutes(ThreadLocalRandom.current().nextInt(20, 60))
                 .build();
 
-        var savedDelivery = deliveryRepository.save(delivery);
+        Delivery saved = deliveryRepository.save(delivery);
+
+        log.info(
+                "Delivery created for order {}",
+                saved.getOrderId()
+        );
+    }
+
+    @Override
+    @Transactional
+    public DeliveryResponseDto acceptDelivery(Long orderId, Long courierUserId) {
+        Delivery delivery = deliveryRepository.findByOrderIdForUpdate(orderId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Delivery not found for orderId=" + orderId
+                ));
+
+        if (delivery.getDeliveryStatus() != DeliveryStatus.WAITING_FOR_COURIER) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Delivery has already been accepted."
+            );
+        }
+
+        Courier courier = getCourierByUserId(courierUserId);
+
+        if (courier.getCourierStatus() != CourierStatus.AVAILABLE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Courier is not available."
+            );
+        }
+
+        delivery.setCourier(courier);
+        delivery.setDeliveryStatus(DeliveryStatus.COURIER_ASSIGNED);
+
+        courier.setCourierStatus(CourierStatus.ON_THE_WAY_TO_RESTAURANT);
+
+        deliveryRepository.save(delivery);
+        courierRepository.save(courier);
 
         DeliveryAssignedEventDto kafkaEvent = DeliveryAssignedEventDto.builder()
-                .orderId(eventDto.orderId())
+                .orderId(delivery.getOrderId())
                 .courierId(courier.getId())
                 .courierName(courier.getName())
-                .address(eventDto.address())
-                .etaMinutes(savedDelivery.getEtaMinutes())
+                .address(delivery.getAddress())
+                .etaMinutes(delivery.getEtaMinutes())
                 .build();
-
 
         kafkaTemplate.send(
                 deliveryEventsTopic,
-                savedDelivery.getOrderId().toString(),
+                delivery.getOrderId().toString(),
                 kafkaEvent
         );
 
-        log.info("Delivery assigned: orderId={}, courier={}, eta={}min",
-                eventDto.orderId(),
+        log.info("Courier {} accepted order {}",
                 courier.getName(),
-                savedDelivery.getEtaMinutes());
+                orderId
+        );
+
+        return deliveryMapper.toDeliveryDto(delivery);
     }
 
-    @Transactional
     @Override
-    public void pickUpOrder(Long orderId, Long courierUserId) {
-        Delivery delivery = deliveryRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Delivery not found for orderId=" + orderId)
-                );
+    @Transactional
+    public DeliveryResponseDto pickUpOrder(Long orderId, Long courierUserId) {
+        Delivery delivery = findDeliveryByOrderId(orderId);
 
-        if (!delivery.getCourier().getId().equals(courierUserId)) {
+        if (!delivery.getCourier().getUserId().equals(courierUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot pick up someone else's order!");
+        }
+
+        if (delivery.getDeliveryStatus() != DeliveryStatus.COURIER_ASSIGNED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot pick up order with status: " + delivery.getDeliveryStatus());
         }
 
         Courier courier = delivery.getCourier();
@@ -109,24 +149,35 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         log.info("Order {} picked up by courier {}. On the way to customer!", orderId, courier.getName());
 
-        kafkaTemplate.send(orderPickedUpTopic, orderId.toString(), new OrderPickedUpEventDto(orderId));
+        kafkaTemplate.send(
+                orderPickedUpTopic,
+                orderId.toString(),
+                new OrderPickedUpEventDto(orderId));
+
+        return deliveryMapper.toDeliveryDto(delivery);
     }
 
-    @Transactional
     @Override
-    public void completeDelivery(Long orderId, Long courierUserId) {
-        Delivery delivery = deliveryRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Delivery not found for orderId=" + orderId)
-                );
+    @Transactional
+    public DeliveryResponseDto completeDelivery(Long orderId, Long courierUserId) {
+        Delivery delivery = findDeliveryByOrderId(orderId);
 
-        if (!delivery.getCourier().getId().equals(courierUserId)) {
+        if (!delivery.getCourier().getUserId().equals(courierUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot complete someone else's delivery!");
         }
 
         Courier courier = delivery.getCourier();
 
+        if (delivery.getDeliveryStatus() != DeliveryStatus.PICKED_UP) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Cannot complete delivery before picking up order from restaurant!"
+            );
+        }
+
         delivery.setDeliveryStatus(DeliveryStatus.DELIVERED);
+        delivery.setCompletedAt(LocalDateTime.now());
+
         courier.setCourierStatus(CourierStatus.AVAILABLE);
 
         deliveryRepository.save(delivery);
@@ -134,23 +185,108 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         log.info("Order {} delivered successfully by courier {}.", orderId, courier.getName());
 
-        kafkaTemplate.send(deliveryCompletedTopic, orderId.toString(), new OrderDeliveredEventDto(orderId));
+        kafkaTemplate.send(
+                deliveryCompletedTopic,
+                orderId.toString(),
+                new OrderDeliveredEventDto(orderId));
+
+        return deliveryMapper.toDeliveryDto(delivery);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<DeliveryResponseDto> getCurrentDeliveryByCourierUserId(Long courierUserId) {
+
+        Courier courier = getCourierByUserId(courierUserId);
+
+        Set<DeliveryStatus> activeStatuses = Set.of(
+                DeliveryStatus.COURIER_ASSIGNED,
+                DeliveryStatus.PICKED_UP
+        );
+
+        return deliveryRepository
+                .findFirstByCourier_UserIdAndDeliveryStatusIn(courier.getUserId(), activeStatuses)
+                .map(deliveryMapper::toDeliveryDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<DeliveryResponseDto> getDeliveriesByCourierUserId(Long courierUserId) {
         log.info("Fetching deliveries for courier with userId={}", courierUserId);
 
         List<Delivery> deliveries = deliveryRepository.findAllByCourier_UserId(courierUserId);
 
         return deliveries.stream()
-                .map(delivery -> DeliveryResponseDto.builder()
-                        .id(delivery.getId())
-                        .orderId(delivery.getOrderId())
-                        .deliveryStatus(delivery.getDeliveryStatus())
-                        .etaMinutes(delivery.getEtaMinutes())
-                        .courierId(delivery.getCourier() != null ? delivery.getCourier().getId() : null)
-                        .build())
+                .map(deliveryMapper::toDeliveryDto)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DeliveryResponseDto getDeliveryByOrderId(Long orderId, Long courierUserId) {
+        Delivery delivery = findDeliveryByOrderId(orderId);
+
+        if (!delivery.getCourier().getUserId().equals(courierUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot access someone else's delivery!");
+        }
+
+        return deliveryMapper.toDeliveryDto(delivery);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DeliveryResponseDto> getWaitingDeliveries(Long courierUserId) {
+
+        Courier courier = getCourierByUserId(courierUserId);
+
+        if (courier.getCourierStatus() != CourierStatus.AVAILABLE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Courier is not available."
+            );
+        }
+
+        log.info("Fetching waiting deliveries for courier {}", courierUserId);
+
+        return deliveryRepository.findAllByDeliveryStatus(DeliveryStatus.WAITING_FOR_COURIER)
+                .stream()
+                .map(deliveryMapper::toDeliveryDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CourierStatisticsResponseDto getCompletedDeliveriesToday(Long courierUserId) {
+        getCourierByUserId(courierUserId);
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = startOfDay.plusDays(1);
+
+        var completedToday = deliveryRepository
+                .countByCourier_UserIdAndCompletedAtBetween(
+                        courierUserId,
+                        startOfDay,
+                        endOfDay
+                );
+
+        return new CourierStatisticsResponseDto(completedToday);
+    }
+
+    private Delivery findDeliveryByOrderId(Long orderId) {
+        return deliveryRepository
+                .findByOrderId(orderId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Delivery not found for orderId=" + orderId
+                ));
+    }
+
+    private Courier getCourierByUserId(Long courierUserId) {
+        return courierRepository
+                .findByUserId(courierUserId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Courier not found."
+                ));
     }
 }

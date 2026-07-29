@@ -66,7 +66,7 @@ public class AuthServiceImpl implements AuthService {
     private void validateRegistration(RegisterRequestDto registerDto) {
         if (!registerDto.password().equals(registerDto.confirmPassword())) {
             log.warn("Passwords do not match for email: {}", registerDto.email());
-            throw new PasswordMismatchException("Passwords do not match for email: " + registerDto.email());
+            throw new PasswordMismatchException("Passwords do not match");
         }
 
         if (userRepository.existsByEmail(registerDto.email())) {
