@@ -26,7 +26,6 @@ public class DeliveryController {
 
         return delivery.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
-
     }
 
     @GetMapping("/statistics/today")

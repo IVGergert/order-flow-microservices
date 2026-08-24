@@ -3,6 +3,8 @@ package com.gergert.orderservice.dto;
 import com.gergert.orderservice.entity.Order;
 import org.mapstruct.*;
 
+import java.util.List;
+
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
         componentModel = MappingConstants.ComponentModel.SPRING
 )
@@ -16,4 +18,5 @@ public interface OrderMapper {
     }
 
     OrderDto toOrderDto(Order order);
+    List<OrderDto> toOrderDto(List<Order> orders);
 }

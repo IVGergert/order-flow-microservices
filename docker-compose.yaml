@@ -13,7 +13,7 @@ services:
       - order-flow-network
     depends_on:
       - auth-frontend
-      - delivery-frontend
+      - order-frontend
       - auth-service
       - order-service
       - payment-service
@@ -30,11 +30,11 @@ services:
     networks:
       - order-flow-network
 
-  delivery-frontend:
+  order-frontend:
     build:
-      context: ./frontend/delivery-service-frontend
+      context: ./frontend/order-service-frontend
       dockerfile: Dockerfile
-    container_name: delivery-frontend
+    container_name: order-frontend
     restart: unless-stopped
     networks:
       - order-flow-network
@@ -233,6 +233,22 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - order-flow-network
+
   # Kafka
   kafka:
     image: confluentinc/cp-kafka:8.1.1
@@ -275,3 +291,4 @@ volumes:
   postgres_delivery_data:
   postgres_auth_data:
   kafka_data:
+  minio-data:

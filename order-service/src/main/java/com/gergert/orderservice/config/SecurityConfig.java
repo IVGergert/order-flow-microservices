@@ -37,6 +37,8 @@ public class SecurityConfig {
                                 "/actuator/**")
                         .permitAll()
 
+                        .requestMatchers("/api/menu/**").authenticated()
+
                         .requestMatchers("/api/orders/**").hasAuthority("ROLE_CUSTOMER")
 
                         .anyRequest().authenticated()

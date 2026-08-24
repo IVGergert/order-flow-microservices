@@ -23,6 +23,10 @@ public class Courier {
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "transport_type")
+    private TransportType transportType;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "courier_status")
     private CourierStatus courierStatus;
 }

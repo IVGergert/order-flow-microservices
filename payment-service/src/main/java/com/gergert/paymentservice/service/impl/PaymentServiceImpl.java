@@ -29,9 +29,9 @@ public class PaymentServiceImpl implements PaymentService {
 
         var entity = mapper.toEntity(requestDto);
 
-        var status = requestDto.paymentMethod().equals(PaymentMethod.QR)
-                ? PaymentStatus.PAYMENT_FAILED
-                : PaymentStatus.PAYMENT_SUCCEEDED;
+        var status = requestDto.paymentMethod().equals(PaymentMethod.CARD)
+                ? PaymentStatus.PAYMENT_SUCCEEDED
+                : PaymentStatus.PAYMENT_FAILED;
 
         entity.setPaymentStatus(status);
 

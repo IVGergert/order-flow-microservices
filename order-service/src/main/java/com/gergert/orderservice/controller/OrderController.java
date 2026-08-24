@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/orders")
@@ -36,5 +38,12 @@ public class OrderController {
         log.info("Paying order with id={}, request={}", id, requestDto);
         var entity = orderService.processPayment(id, requestDto, claims.userId());
         return orderMapper.toOrderDto(entity);
+    }
+
+    @GetMapping("/my")
+    public List<OrderDto> getMyOrder(@AuthenticationPrincipal JwtClaimsDto claims) {
+        log.info("View orders for user with id = {}", claims.userId());
+        var orders = orderService.getAllOrdersByUserId(claims.userId());
+        return orderMapper.toOrderDto(orders);
     }
 }

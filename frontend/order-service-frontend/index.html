@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Delivery</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-text">
+                <span class="logo-title">Food</span>
+                <span class="logo-subtitle">Delivery App</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" type="button" data-section="menu">
+                <span class="nav-icon">🍴</span>
+                <span>Меню</span>
+            </button>
+
+            <button class="nav-item" type="button" data-section="orders">
+                <span class="nav-icon">📦</span>
+                <span>Мои заказы</span>
+            </button>
+
+            <button class="nav-item" type="button" data-section="profile">
+                <span class="nav-icon">👤</span>
+                <span>Профиль</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-details">
+                    <strong class="user-name" id="userEmail">Пользователь</strong>
+                </div>
+            </div>
+
+            <button class="logout-button" id="logoutButton" type="button">
+                <span class="nav-icon">↪</span>
+                <span>Выйти</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="top-header">
+            <div class="header-title">
+                <h1 id="pageTitle">Меню</h1>
+                <p id="pageSubtitle">Выберите блюда для заказа</p>
+            </div>
+        </header>
+
+        <div class="main-body">
+
+            <div class="alert hidden" id="alertBox"></div>
+
+            <section class="content-section" id="menuSection">
+                <div class="categories" id="categories"></div>
+
+                <div class="menu-state hidden" id="menuLoading">
+                    <div class="loader"></div>
+                    <p>Загрузка меню...</p>
+                </div>
+
+                <div class="menu-state hidden" id="menuEmpty">
+                    <div class="empty-icon">🍽️</div>
+                    <h3>Меню пусто</h3>
+                    <p>Сейчас нет доступных блюд.</p>
+                </div>
+
+                <div class="menu-grid" id="menuGrid"></div>
+            </section>
+
+            <section class="content-section hidden" id="ordersSection">
+                <div class="orders-header">
+                    <div>
+                        <h2>Мои заказы</h2>
+                    </div>
+
+                    <button class="secondary-button" id="refreshOrdersButton" type="button">
+                        Обновить
+                    </button>
+                </div>
+
+                <div class="orders-state hidden" id="ordersLoading">
+                    <div class="loader"></div>
+                    <p>Загрузка заказов...</p>
+                </div>
+
+                <div class="empty-state hidden" id="ordersEmpty">
+                    <div class="empty-state-icon">📦</div>
+                    <h3>У вас пока нет заказов</h3>
+                    <p>Выберите блюда в меню и оформите свой первый заказ.</p>
+
+                    <button class="primary-button" id="goToMenuButton" type="button">
+                        Перейти в меню
+                    </button>
+                </div>
+
+                <div class="orders-list" id="ordersList"></div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<button class="cart-button" id="cartButton" type="button">
+    <span class="cart-icon">🛒</span>
+    <span>Корзина</span>
+    <span class="cart-count" id="cartCount">0</span>
+</button>
+
+<aside class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header">
+        <div>
+            <h2>Корзина</h2>
+            <span id="cartItemsCount">0 позиций</span>
+        </div>
+        <button class="close-button" id="closeCartButton" type="button">×</button>
+    </div>
+
+    <div class="cart-content">
+        <div class="cart-empty hidden" id="cartEmpty">
+            <div class="empty-icon">🛒</div>
+            <h3>Корзина пуста</h3>
+            <p>Добавьте блюда из меню.</p>
+        </div>
+        <div class="cart-items" id="cartItems"></div>
+    </div>
+
+    <div class="cart-footer">
+        <div class="cart-total">
+            <span>Итого</span>
+            <strong id="cartTotal">0 ₽</strong>
+        </div>
+        <button class="primary-button full-width" id="checkoutButton" type="button" disabled>
+            Оформить заказ
+        </button>
+    </div>
+</aside>
+
+<div class="overlay hidden" id="cartOverlay"></div>
+
+<div class="modal-overlay hidden" id="checkoutModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <h2>Оформление заказа</h2>
+                <p>Проверьте заказ, укажите адрес и способ оплаты.</p>
+            </div>
+            <button class="close-button" id="closeCheckoutButton" type="button">×</button>
+        </div>
+
+        <form id="checkoutForm">
+            <div class="checkout-items" id="checkoutItems"></div>
+
+            <div class="form-group">
+                <label for="deliveryAddress">Адрес доставки</label>
+                <input type="text" id="deliveryAddress" name="deliveryAddress"
+                       placeholder="Например: ул. Советская, 25, кв. 14"
+                       maxlength="255"
+                       autocomplete="street-address"
+                       required>
+                <span class="field-error hidden" id="deliveryAddressError"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Способ оплаты</label>
+                <div class="payment-methods">
+                    <label class="payment-option">
+                        <input type="radio" name="paymentMethod" value="CARD" checked>
+                        <span class="payment-option-content">
+                            <span class="payment-icon">💳</span>
+                            <span>
+                                <strong>Карта</strong>
+                                <small>Оплата онлайн</small>
+                            </span>
+                        </span>
+                    </label>
+
+                    <label class="payment-option">
+                        <input type="radio" name="paymentMethod" value="CASH">
+                        <span class="payment-option-content">
+                            <span class="payment-icon">💵</span>
+                            <span>
+                                <strong>Наличные</strong>
+                                <small>Курьеру при получении</small>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checkout-summary">
+                <div class="summary-row">
+                    <span>Товаров</span>
+                    <strong id="checkoutItemsCount">0</strong>
+                </div>
+                <div class="summary-row total-row">
+                    <span>Сумма заказа</span>
+                    <strong id="checkoutTotal">0 ₽</strong>
+                </div>
+            </div>
+
+            <div class="modal-error hidden" id="checkoutError"></div>
+
+            <button type="submit" class="primary-button full-width" id="confirmOrderButton">
+                Подтвердить заказ
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay hidden" id="orderModal">
+    <div class="modal order-modal">
+        <div class="modal-header">
+            <div class="order-modal-title-row">
+                <h2 id="orderModalTitle">Заказ №</h2>
+                <span class="order-status" id="orderModalStatus">Статус</span>
+            </div>
+            <button class="close-button" id="closeOrderButton" type="button">×</button>
+        </div>
+
+        <div class="order-details">
+            <div class="order-info-grid">
+
+                <div class="order-info-item">
+                    <span>Адрес доставки</span>
+                    <strong id="orderAddress">-</strong>
+                </div>
+
+                <div class="order-info-item">
+                    <span>Курьер</span>
+                    <strong id="orderCourier">-</strong>
+                </div>
+
+                <div class="order-info-item">
+                    <span>Время доставки</span>
+                    <strong id="orderEta">-</strong>
+                </div>
+
+                <div class="order-info-item">
+                    <span>Сумма заказа</span>
+                    <strong id="orderTotal">0 ₽</strong>
+                </div>
+
+            </div>
+
+            <div class="order-items-section">
+                <h3>Состав заказа</h3>
+                <div class="order-items" id="orderItems"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

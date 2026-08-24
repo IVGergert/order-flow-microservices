@@ -2,17 +2,20 @@ package com.gergert.orderservice.service.impl;
 
 import com.gergert.common.dto.OrderPaymentRequestDto;
 import com.gergert.common.dto.CreatePaymentRequestDto;
+import com.gergert.common.enums.PaymentMethod;
 import com.gergert.common.enums.PaymentStatus;
 import com.gergert.orderservice.client.PaymentHttpClient;
 import com.gergert.orderservice.dto.CreateOrderRequestDto;
 import com.gergert.orderservice.dto.OrderMapper;
 import com.gergert.common.dto.kafka.OrderPaidEventDto;
+import com.gergert.orderservice.entity.MenuItem;
 import com.gergert.orderservice.entity.Order;
 import com.gergert.orderservice.entity.OrderItem;
 import com.gergert.orderservice.entity.OrderStatus;
+import com.gergert.orderservice.repository.MenuItemRepository;
 import com.gergert.orderservice.repository.OrderRepository;
 import com.gergert.orderservice.service.OrderService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -32,6 +35,8 @@ public class OrderServiceImpl implements OrderService {
     private String orderPaidEventTopic;
 
     private final OrderRepository orderRepository;
+    private final MenuItemRepository menuItemRepository;
+
     private final OrderMapper orderMapper;
     private final PaymentHttpClient paymentHttpClient;
 
@@ -50,11 +55,19 @@ public class OrderServiceImpl implements OrderService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Order must be in orderStatus PENDING_PAYMENT");
         }
 
-        var response = paymentHttpClient.createPayment(CreatePaymentRequestDto.builder()
+        if (requestDto.paymentMethod() == PaymentMethod.CASH) {
+            order.setOrderStatus(OrderStatus.CASH_ON_DELIVERY);
+            Order savedOrder = orderRepository.save(order);
+            sendOrderReadyForDeliveryEvent(savedOrder);
+            return savedOrder;
+        }
+
+        var response = paymentHttpClient.createPayment(
+                CreatePaymentRequestDto.builder()
                         .orderId(id)
                         .paymentMethod(requestDto.paymentMethod())
                         .amount(order.getTotalAmount())
-                .build());
+                        .build());
 
         var status = PaymentStatus.PAYMENT_SUCCEEDED.equals(response.paymentStatus())
                 ? OrderStatus.PAID
@@ -64,24 +77,13 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
 
         if (status == OrderStatus.PAID){
-            OrderPaidEventDto event = OrderPaidEventDto.builder()
-                    .orderId(savedOrder.getId())
-                    .address(savedOrder.getAddress())
-                    .amount(savedOrder.getTotalAmount())
-                    .build();
-
-            log.info("Sending OrderPaidEvent to Kafka for orderId={}", savedOrder.getId());
-
-            kafkaTemplate.send(
-                    orderPaidEventTopic,
-                    savedOrder.getId().toString(),
-                    event
-            );
+            sendOrderReadyForDeliveryEvent(savedOrder);
         }
 
         return savedOrder;
     }
 
+    @Transactional
     @Override
     public Order create(CreateOrderRequestDto request, Long customerId) {
         var order = orderMapper.toEntity(request);
@@ -98,22 +100,60 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Order getOrderOrThrow(Long id) {
         var orderItemOptional = orderRepository.findById(id);
         return orderItemOptional.orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity with id `%s` not found".formatted(id)));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> getAllOrdersByUserId(Long customerId) {
+        return orderRepository.findAllByCustomerId(customerId);
+    }
+
+    private void sendOrderReadyForDeliveryEvent(Order order) {
+
+        OrderPaidEventDto event =
+                OrderPaidEventDto.builder()
+                        .orderId(order.getId())
+                        .address(order.getAddress())
+                        .amount(order.getTotalAmount())
+                        .build();
+
+        log.info("Sending OrderReadyForDeliveryEvent for orderId={}", order.getId());
+
+        kafkaTemplate.send(
+                orderPaidEventTopic,
+                order.getId().toString(),
+                event
+        );
+    }
+
     private void calculatePricingForOrder(Order order){
         BigDecimal totalPrice = BigDecimal.ZERO;
 
-        for (OrderItem item : order.getItems()) {
-            var randomPrice = ThreadLocalRandom.current().nextDouble(100, 4000);
-            item.setPriceAtPurchase(BigDecimal.valueOf(randomPrice));
+        for (OrderItem orderItem : order.getItems()) {
+            MenuItem menuItem = menuItemRepository
+                    .findById(orderItem.getItemId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Menu item with id `%s` not found".formatted(orderItem.getItemId())
+                    )
+            );
 
-            totalPrice = item.getPriceAtPurchase()
-                    .multiply(BigDecimal.valueOf(item.getQuantity()))
-                    .add(totalPrice);
+            orderItem.setItemName(menuItem.getName());
+            orderItem.setPriceAtPurchase(menuItem.getPrice());
+            orderItem.setOrder(order);
+
+            BigDecimal itemTotal = menuItem
+                    .getPrice()
+                    .multiply(BigDecimal.valueOf(orderItem.getQuantity()
+                    )
+            );
+
+            totalPrice = totalPrice.add(itemTotal);
         }
 
         order.setTotalAmount(totalPrice);
