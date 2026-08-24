@@ -39,6 +39,15 @@ services:
     networks:
       - order-flow-network
 
+  delivery-frontend:
+    build:
+      context: ./frontend/delivery-service-frontend
+      dockerfile: Dockerfile
+    container_name: delivery-frontend
+    restart: unless-stopped
+    networks:
+      - order-flow-network
+
   # Services
   order-service:
     build:

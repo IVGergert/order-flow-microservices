@@ -1,8 +1,9 @@
 package com.gergert.deliveryservice.dto;
 
 import com.gergert.deliveryservice.entity.DeliveryStatus;
-import com.gergert.deliveryservice.entity.TransportType;
 import lombok.Builder;
+
+import java.time.LocalDateTime;
 
 @Builder
 public record DeliveryResponseDto(
@@ -12,6 +13,6 @@ public record DeliveryResponseDto(
         Long courierId,
         String courierName,
         String address,
-        Integer etaMinutes
-) {
+        Integer etaMinutes,
+        LocalDateTime completedAt) {
 }

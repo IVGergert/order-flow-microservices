@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Delivery — Кабинет Курьера</title>
+    <link rel="stylesheet" href="/courier/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-text">
+                <span class="logo-title">Food Express</span>
+                <span class="logo-subtitle">Кабинет Курьера 🛵</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" type="button" data-section="current">
+                <span class="nav-icon">⚡</span>
+                <span>Текущий заказ</span>
+            </button>
+
+            <button class="nav-item" type="button" data-section="waiting">
+                <span class="nav-icon">📋</span>
+                <span>Доступные заказы</span>
+            </button>
+
+            <button class="nav-item" type="button" data-section="history">
+                <span class="nav-icon">📦</span>
+                <span>История доставок</span>
+            </button>
+
+            <button class="nav-item" type="button" data-section="profile">
+                <span class="nav-icon">👤</span>
+                <span>Профиль</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">К</div>
+                <div class="user-details">
+                    <strong class="user-name" id="userEmail">Курьер</strong>
+                    <span class="courier-status-badge offline" id="courierStatusBadge">Оффлайн</span>
+                </div>
+            </div>
+
+            <button class="logout-button" id="logoutButton" type="button">
+                <span class="nav-icon">↪</span>
+                <span>Выйти</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <header class="top-header">
+            <div class="header-title">
+                <h1 id="pageTitle">Текущий заказ</h1>
+                <p id="pageSubtitle">Управление вашим активным заказом</p>
+            </div>
+
+            <div class="header-actions">
+                <div class="stats-counter" title="Выполнено сегодня">
+                    <span>Сегодня:</span>
+                    <strong id="todayCount">0</strong>
+                </div>
+
+                <button class="status-toggle-button offline" id="statusToggleButton" type="button">
+                    <span class="status-dot"></span>
+                    <span id="statusToggleText">Выйти на линию</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-body">
+
+            <div class="alert hidden" id="alertBox"></div>
+
+            <!-- SECTION: CURRENT DELIVERY -->
+            <section class="content-section" id="currentSection">
+                <div class="courier-state hidden" id="currentLoading">
+                    <div class="loader"></div>
+                    <p>Проверка активных доставок...</p>
+                </div>
+
+                <div class="active-delivery-card hidden" id="activeDeliveryCard">
+                    <div class="active-delivery-header">
+                        <div>
+                            <span class="active-badge">АКТИВНЫЙ ЗАКАЗ</span>
+                            <h2 id="activeOrderId">Заказ №-</h2>
+                        </div>
+                        <span class="order-status status-info" id="activeDeliveryStatus">В работе</span>
+                    </div>
+
+                    <div class="active-delivery-body">
+                        <div class="delivery-address-box">
+                            <span>Адрес назначения</span>
+                            <strong id="activeAddress">-</strong>
+                        </div>
+
+                        <div class="delivery-meta-grid">
+                            <div>
+                                <span>Время на доставку</span>
+                                <strong id="activeEta">-</strong>
+                            </div>
+                            <div>
+                                <span>Статус курьера</span>
+                                <strong id="activeCourierState">-</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="active-delivery-actions">
+                        <button type="button" class="primary-button action-btn" id="pickupButton">
+                            📍 Забрать заказ из ресторана
+                        </button>
+
+                        <button type="button" class="primary-button success-btn action-btn hidden" id="completeButton">
+                            ✅ Завершить доставку клиенту
+                        </button>
+                    </div>
+                </div>
+
+                <div class="empty-state hidden" id="noActiveDelivery">
+                    <div class="empty-state-icon">🛵</div>
+                    <h3>У вас нет активного заказа</h3>
+                    <p id="noActiveMessage">Выйдите на линию и выберите доступный заказ для доставки.</p>
+                    <button class="primary-button" id="goToWaitingButton" type="button">
+                        Посмотреть доступные заказы
+                    </button>
+                </div>
+            </section>
+
+            <!-- SECTION: WAITING DELIVERIES -->
+            <section class="content-section hidden" id="waitingSection">
+                <div class="orders-header">
+                    <div>
+                        <h2>Доступные заказы</h2>
+                        <p>Заказы, готовые к назначению курьера</p>
+                    </div>
+                    <button class="secondary-button" id="refreshWaitingButton" type="button">
+                        Обновить
+                    </button>
+                </div>
+
+                <div class="courier-state hidden" id="waitingLoading">
+                    <div class="loader"></div>
+                    <p>Поиск доступных заказов...</p>
+                </div>
+
+                <div class="empty-state hidden" id="waitingEmpty">
+                    <div class="empty-state-icon">☕</div>
+                    <h3>Нет доступных заказов</h3>
+                    <p>Пока нет новых заказов для доставки. Попробуйте обновить чуть позже.</p>
+                </div>
+
+                <div class="waiting-list" id="waitingList"></div>
+            </section>
+
+            <!-- SECTION: HISTORY -->
+            <section class="content-section hidden" id="historySection">
+                <div class="orders-header">
+                    <div>
+                        <h2>История доставок</h2>
+                        <p>Все ранее выполненные вами заказы</p>
+                    </div>
+                    <button class="secondary-button" id="refreshHistoryButton" type="button">
+                        Обновить
+                    </button>
+                </div>
+
+                <div class="courier-state hidden" id="historyLoading">
+                    <div class="loader"></div>
+                    <p>Загрузка истории...</p>
+                </div>
+
+                <div class="empty-state hidden" id="historyEmpty">
+                    <div class="empty-state-icon">📦</div>
+                    <h3>История пуста</h3>
+                    <p>Вы пока не выполнили ни одной доставки.</p>
+                </div>
+
+                <div class="orders-list" id="historyList"></div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<script src="/courier/js/app.js"></script>
+</body>
+</html>
