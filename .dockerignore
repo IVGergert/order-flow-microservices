@@ -4,16 +4,15 @@
 .gitattributes
 
 # Maven
+.mvn/
 mvnw
 mvnw.cmd
-.mvn/
+**/.mvn/
 **/mvnw
 **/mvnw.cmd
-**/.mvn/
 **/target/
 
 # IDE
-README.md
 .idea/
 *.iml
 *.iws
@@ -26,11 +25,11 @@ amplicode.xml
 
 # Docker
 **/Dockerfile
-docker-compose.yaml
 docker-compose.yml
+docker-compose.yaml
 .dockerignore
 
-# Документация
+# Documentation
 README.md
 *.md
 .editorconfig

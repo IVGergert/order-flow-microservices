@@ -1,5 +1,5 @@
 # Build
-FROM maven:3.9.6-eclipse-temurin-17 AS builder
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
@@ -15,16 +15,22 @@ RUN mvn dependency:go-offline -pl common-libs,delivery-service -am -B -q
 COPY common-libs/src common-libs/src
 COPY delivery-service/src delivery-service/src
 
-RUN mvn package -pl common-libs,delivery-service -am -DskipTests -B -q
+RUN mvn clean package -pl common-libs,delivery-service -am -B -q
 
 # Run
 FROM eclipse-temurin:17-jre-alpine
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl \
+    && addgroup -S spring \
+    && adduser -S spring -G spring
 
 WORKDIR /app
 
-COPY --from=builder /build/delivery-service/target/*.jar app.jar
+COPY --from=builder \
+     --chown=spring:spring \
+     /build/delivery-service/target/*.jar app.jar
+
+USER spring
 
 EXPOSE 8083
 

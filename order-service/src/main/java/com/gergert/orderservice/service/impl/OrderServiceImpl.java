@@ -12,6 +12,10 @@ import com.gergert.orderservice.entity.MenuItem;
 import com.gergert.orderservice.entity.Order;
 import com.gergert.orderservice.entity.OrderItem;
 import com.gergert.orderservice.entity.OrderStatus;
+import com.gergert.orderservice.exception.InvalidOrderStatusException;
+import com.gergert.orderservice.exception.MenuItemNotFoundException;
+import com.gergert.orderservice.exception.OrderAccessDeniedException;
+import com.gergert.orderservice.exception.OrderNotFoundException;
 import com.gergert.orderservice.repository.MenuItemRepository;
 import com.gergert.orderservice.repository.OrderRepository;
 import com.gergert.orderservice.service.OrderService;
@@ -19,10 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -48,11 +50,12 @@ public class OrderServiceImpl implements OrderService {
         var order = getOrderOrThrow(id);
 
         if (!order.getCustomerId().equals(customerId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only pay for your own orders");
+            throw new OrderAccessDeniedException("You can only pay for your own orders");
         }
 
         if (!order.getOrderStatus().equals(OrderStatus.PENDING_PAYMENT)){
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Order must be in orderStatus PENDING_PAYMENT");
+            throw new InvalidOrderStatusException("Order must be in orderStatus PENDING_PAYMENT");
+
         }
 
         if (requestDto.paymentMethod() == PaymentMethod.CASH) {
@@ -104,7 +107,7 @@ public class OrderServiceImpl implements OrderService {
     public Order getOrderOrThrow(Long id) {
         var orderItemOptional = orderRepository.findById(id);
         return orderItemOptional.orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity with id `%s` not found".formatted(id)));
+                new OrderNotFoundException("Entity with id `%s` not found".formatted(id)));
     }
 
     @Override
@@ -137,8 +140,7 @@ public class OrderServiceImpl implements OrderService {
         for (OrderItem orderItem : order.getItems()) {
             MenuItem menuItem = menuItemRepository
                     .findById(orderItem.getItemId())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
+                    .orElseThrow(() -> new MenuItemNotFoundException(
                             "Menu item with id `%s` not found".formatted(orderItem.getItemId())
                     )
             );

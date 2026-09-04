@@ -8,6 +8,7 @@ import com.gergert.deliveryservice.dto.CourierStatisticsResponseDto;
 import com.gergert.deliveryservice.dto.DeliveryMapper;
 import com.gergert.deliveryservice.dto.DeliveryResponseDto;
 import com.gergert.deliveryservice.entity.*;
+import com.gergert.deliveryservice.exception.*;
 import com.gergert.deliveryservice.repository.CourierRepository;
 import com.gergert.deliveryservice.repository.DeliveryRepository;
 import com.gergert.deliveryservice.service.DeliveryService;
@@ -73,26 +74,18 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     @Transactional
     public DeliveryResponseDto acceptDelivery(Long orderId, Long courierUserId) {
-        Delivery delivery = deliveryRepository.findByOrderIdForUpdate(orderId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Delivery not found for orderId=" + orderId
-                ));
+        Delivery delivery = deliveryRepository
+                .findByOrderIdForUpdate(orderId)
+                .orElseThrow(() -> new DeliveryNotFoundException("Delivery not found for orderId=" + orderId));
 
         if (delivery.getDeliveryStatus() != DeliveryStatus.WAITING_FOR_COURIER) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Delivery has already been accepted."
-            );
+            throw new InvalidDeliveryStatusException("Delivery has already been accepted.");
         }
 
         Courier courier = getCourierByUserId(courierUserId);
 
         if (courier.getCourierStatus() != CourierStatus.AVAILABLE) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Courier is not available."
-            );
+            throw new CourierNotAvailableException("Courier is not available.");
         }
 
         delivery.setCourier(courier);
@@ -131,12 +124,11 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery delivery = findDeliveryByOrderId(orderId);
 
         if (!delivery.getCourier().getUserId().equals(courierUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot pick up someone else's order!");
+            throw new DeliveryAccessDeniedException("You cannot pick up someone else's order!");
         }
 
         if (delivery.getDeliveryStatus() != DeliveryStatus.COURIER_ASSIGNED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Cannot pick up order with status: " + delivery.getDeliveryStatus());
+            throw new InvalidDeliveryStatusException("Cannot pick up order with status: " + delivery.getDeliveryStatus());
         }
 
         Courier courier = delivery.getCourier();
@@ -163,15 +155,13 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery delivery = findDeliveryByOrderId(orderId);
 
         if (!delivery.getCourier().getUserId().equals(courierUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot complete someone else's delivery!");
+            throw new DeliveryAccessDeniedException("You cannot complete someone else's delivery!");
         }
 
         Courier courier = delivery.getCourier();
 
         if (delivery.getDeliveryStatus() != DeliveryStatus.PICKED_UP) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Cannot complete delivery before picking up order from restaurant!"
+            throw new InvalidDeliveryStatusException("Cannot complete delivery before picking up order from restaurant!"
             );
         }
 
@@ -227,7 +217,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery delivery = findDeliveryByOrderId(orderId);
 
         if (!delivery.getCourier().getUserId().equals(courierUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot access someone else's delivery!");
+            throw new DeliveryAccessDeniedException("You cannot access someone else's delivery!");
         }
 
         return deliveryMapper.toDeliveryDto(delivery);
@@ -240,10 +230,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         Courier courier = getCourierByUserId(courierUserId);
 
         if (courier.getCourierStatus() != CourierStatus.AVAILABLE) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Courier is not available."
-            );
+            throw new CourierNotAvailableException("Courier is not available.");
         }
 
         log.info("Fetching waiting deliveries for courier {}", courierUserId);
@@ -275,18 +262,12 @@ public class DeliveryServiceImpl implements DeliveryService {
     private Delivery findDeliveryByOrderId(Long orderId) {
         return deliveryRepository
                 .findByOrderId(orderId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Delivery not found for orderId=" + orderId
-                ));
+                .orElseThrow(() -> new DeliveryNotFoundException("Delivery not found for orderId=" + orderId));
     }
 
     private Courier getCourierByUserId(Long courierUserId) {
         return courierRepository
                 .findByUserId(courierUserId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Courier not found."
-                ));
+                .orElseThrow(() -> new CourierNotFoundException("Courier not found."));
     }
 }

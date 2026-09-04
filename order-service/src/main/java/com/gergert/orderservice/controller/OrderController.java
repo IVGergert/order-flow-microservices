@@ -6,6 +6,7 @@ import com.gergert.orderservice.dto.OrderDto;
 import com.gergert.orderservice.dto.OrderMapper;
 import com.gergert.common.dto.OrderPaymentRequestDto;
 import com.gergert.orderservice.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,7 +23,7 @@ public class OrderController {
     private final OrderMapper orderMapper;
 
     @PostMapping
-    public OrderDto create(@RequestBody CreateOrderRequestDto requestDto,
+    public OrderDto create(@Valid @RequestBody CreateOrderRequestDto requestDto,
                            @AuthenticationPrincipal JwtClaimsDto claims) {
 
         log.info("Create order request by user userId={}, email={}", claims.userId(), claims.email());
@@ -32,7 +33,7 @@ public class OrderController {
 
     @PostMapping("/{id}/pay")
     public OrderDto payOrder(@PathVariable Long id,
-                             @RequestBody OrderPaymentRequestDto requestDto,
+                             @Valid @RequestBody OrderPaymentRequestDto requestDto,
                              @AuthenticationPrincipal JwtClaimsDto claims) {
 
         log.info("Paying order with id={}, request={}", id, requestDto);

@@ -7,18 +7,19 @@ import com.gergert.common.enums.PaymentStatus;
 import com.gergert.paymentservice.dto.PaymentMapper;
 import com.gergert.paymentservice.repository.PaymentRepository;
 import com.gergert.paymentservice.service.PaymentService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentMapper mapper;
     private final PaymentRepository paymentRepository;
 
+    @Override
     public CreatePaymentResponseDto makePayment(CreatePaymentRequestDto requestDto){
         var found = paymentRepository.findByOrderId(requestDto.orderId());
 

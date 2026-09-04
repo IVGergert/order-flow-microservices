@@ -1,8 +1,12 @@
+let selectedRole = "CUSTOMER";
+
 function selectRole(type) {
     const btnCustomer = document.getElementById("btnCustomer");
     const btnCourier = document.getElementById("btnCourier");
     const registerTab = document.getElementById("registerTab");
     const courierNotice = document.getElementById("courierNotice");
+
+    selectedRole = type;
 
     hideAlert();
 
@@ -70,10 +74,23 @@ async function onLogin(event) {
 
         if (!response.ok) {
             const errorMsg = await response.text();
-            throw new Error(errorMsg);
+            throw new Error(errorMsg.message || "Не удалось выполнить вход.");
         }
 
         const data = await response.json();
+
+        const expectedRole = selectedRole === "CUSTOMER"
+                ? "ROLE_CUSTOMER"
+                : "ROLE_COURIER";
+
+        if (data.role !== expectedRole) {
+            showAlert(selectedRole === "COURIER"
+                    ? "Этот аккаунт не является аккаунтом курьера."
+                    : "Этот аккаунт не является аккаунтом клиента."
+            );
+            return;
+        }
+
 
         saveAuthData(data);
         redirectByRole(data.role);

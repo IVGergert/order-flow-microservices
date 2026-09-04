@@ -3,14 +3,14 @@ package com.gergert.deliveryservice.service.impl;
 import com.gergert.deliveryservice.dto.CourierStatusResponseDto;
 import com.gergert.deliveryservice.entity.Courier;
 import com.gergert.deliveryservice.entity.CourierStatus;
+import com.gergert.deliveryservice.exception.CourierNotAvailableException;
+import com.gergert.deliveryservice.exception.CourierNotFoundException;
 import com.gergert.deliveryservice.repository.CourierRepository;
 import com.gergert.deliveryservice.service.CourierService;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Slf4j
@@ -38,8 +38,7 @@ public class CourierServiceImpl implements CourierService {
         Courier courier = getCourierByUserId(userId);
 
         if (courier.getCourierStatus() != CourierStatus.AVAILABLE) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new CourierNotAvailableException(
                     "Cannot go offline while having an active delivery!"
             );
         }
@@ -60,7 +59,6 @@ public class CourierServiceImpl implements CourierService {
 
     private Courier getCourierByUserId(Long userId) {
         return courierRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Courier profile not found for userId=" + userId));
+                .orElseThrow(() -> new CourierNotFoundException("Courier not found for userId = " + userId));
     }
 }

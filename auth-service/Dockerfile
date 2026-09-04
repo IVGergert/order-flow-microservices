@@ -1,5 +1,5 @@
 # Build
-FROM maven:3.9.6-eclipse-temurin-17 AS builder
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
@@ -15,17 +15,23 @@ RUN mvn dependency:go-offline -pl common-libs,auth-service -am -B -q
 COPY common-libs/src common-libs/src
 COPY auth-service/src auth-service/src
 
-RUN mvn clean package -pl common-libs,auth-service -am -DskipTests -B -q
+RUN mvn clean package -pl common-libs,auth-service -am -B -q
 
 
 # Run
 FROM eclipse-temurin:17-jre-alpine
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl \
+    && addgroup -S spring \
+    && adduser -S spring -G spring
 
 WORKDIR /app
 
-COPY --from=builder /build/auth-service/target/*.jar app.jar
+COPY --from=builder \
+     --chown=spring:spring \
+     /build/auth-service/target/*.jar app.jar
+
+USER spring
 
 EXPOSE 8084
 
