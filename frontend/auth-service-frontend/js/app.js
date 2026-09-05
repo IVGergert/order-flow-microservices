@@ -91,7 +91,6 @@ async function onLogin(event) {
             return;
         }
 
-
         saveAuthData(data);
         redirectByRole(data.role);
 
@@ -109,7 +108,7 @@ async function onRegister(event) {
     const confirmPassword = document.getElementById("regConfirmPassword").value;
 
     if (password !== confirmPassword) {
-        showAlert("Password don't matching!");
+        showAlert("Пароли не совпадают!");
         return;
     }
 
@@ -126,7 +125,7 @@ async function onRegister(event) {
 
         if (!response.ok) {
             const errorMsg = await response.text();
-            throw new Error(errorMsg);
+            throw new Error(errorMsg.message);
         }
 
         const data = await response.json();
