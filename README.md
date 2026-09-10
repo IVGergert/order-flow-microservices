@@ -106,6 +106,11 @@ DELIVERY_DB_PORT=5435
 # Настройки MinIO
 MINIO_ROOT_USER=admin
 MINIO_ROOT_PASSWORD=minio_secret_password
+
+# JWT Settings
+JWT_SECRET=secret
+JWT_EXPIRATION_MS_JWT_TOKEN=время
+JWT_EXPIRATION_MS_REFRESH_TOKEN=время
 ```
 
 ### 2. Запуск всего приложения и инфраструктуры
