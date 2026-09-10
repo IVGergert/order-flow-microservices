@@ -104,8 +104,8 @@ DELIVERY_DB_NAME=delivery_db
 DELIVERY_DB_PORT=5435
 
 # Настройки MinIO
-MINIO_ROOT_USER=admin
-MINIO_ROOT_PASSWORD=minio_secret_password
+MINIO_USER=admin
+MINIO_PASSWORD=minio_secret_password
 
 # JWT Settings
 JWT_SECRET=secret
