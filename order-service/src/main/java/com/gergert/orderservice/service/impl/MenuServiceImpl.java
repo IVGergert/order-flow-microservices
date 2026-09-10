@@ -4,6 +4,7 @@ import com.gergert.orderservice.entity.MenuItem;
 import com.gergert.orderservice.exception.MenuItemNotFoundException;
 import com.gergert.orderservice.repository.MenuItemRepository;
 import com.gergert.orderservice.service.MenuService;
+import org.springframework.cache.annotation.Cacheable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +17,14 @@ public class MenuServiceImpl implements MenuService {
     private final MenuItemRepository menuItemRepository;
 
     @Override
+    @Cacheable("menu")
     @Transactional(readOnly = true)
     public List<MenuItem> getAllItems() {
         return menuItemRepository.findAll();
     }
 
     @Override
+    @Cacheable(value = "menu", key = "#id")
     @Transactional(readOnly = true)
     public MenuItem getItemById(Long id) {
         return menuItemRepository.findById(id)
