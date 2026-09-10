@@ -2,6 +2,10 @@ import {
     buildAuthHeaders
 } from "./state.js";
 
+import {
+    getErrorMessage
+} from "../../common/error-handler.js";
+
 export async function getCourierStatus() {
     return fetch("/api/deliveries/courier/status", {
         method: "GET",
@@ -72,14 +76,6 @@ export async function completeDeliveryRequest(orderId) {
     });
 }
 
-export async function getErrorMessage(response) {
-    try {
-        const data = await response.json();
-        return data.message
-            || data.error
-            || data.detail
-            || `Ошибка: ${response.status}`;
-    } catch {
-        return `Ошибка сервера: ${response.status}`;
-    }
-}
+export {
+    getErrorMessage
+};

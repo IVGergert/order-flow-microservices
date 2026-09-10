@@ -1,3 +1,7 @@
+import {
+    getErrorMessage
+} from "/common/error-handler.js";
+
 let selectedRole = "CUSTOMER";
 
 function selectRole(type) {
@@ -47,12 +51,14 @@ function switchTab(tab) {
 
 function showAlert(message, isError = true) {
     const alertBox = document.getElementById("alertBox");
+
     alertBox.innerText = message;
     alertBox.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
 }
 
 function hideAlert() {
     const alertBox = document.getElementById("alertBox");
+
     if (alertBox) {
         alertBox.className = "alert hidden";
     }
@@ -69,13 +75,16 @@ async function onLogin(event) {
         const response = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({
+                email,
+                password
+            })
         });
 
         if (!response.ok) {
-            const errorMsg = await response.text();
-            throw new Error(errorMsg.message || "Не удалось выполнить вход.");
+            throw new Error(await getErrorMessage(response));
         }
+
 
         const data = await response.json();
 
@@ -95,7 +104,7 @@ async function onLogin(event) {
         redirectByRole(data.role);
 
     } catch (err) {
-        showAlert(err.message);
+        showAlert(err.message || "Не удалось выполнить вход.");
     }
 }
 
@@ -124,8 +133,7 @@ async function onRegister(event) {
         });
 
         if (!response.ok) {
-            const errorMsg = await response.text();
-            throw new Error(errorMsg.message);
+            throw new Error(await getErrorMessage(response));
         }
 
         const data = await response.json();
@@ -134,7 +142,7 @@ async function onRegister(event) {
         redirectByRole(data.role);
 
     } catch (err) {
-        showAlert(err.message);
+        showAlert(err.message || "Не удалось выполнить регистрацию.");
     }
 }
 
@@ -153,3 +161,8 @@ function redirectByRole(role) {
         window.location.href = "/courier/";
     }
 }
+
+window.selectRole = selectRole;
+window.switchTab = switchTab;
+window.onLogin = onLogin;
+window.onRegister = onRegister;

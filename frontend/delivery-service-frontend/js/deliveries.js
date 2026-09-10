@@ -14,7 +14,6 @@ import {
 
 import {
     state,
-    logout
 } from "./state.js";
 
 import {
@@ -33,16 +32,13 @@ export async function fetchCourierStatus() {
     try {
         const response = await getCourierStatus();
 
-        if (response.status === 401 || response.status === 403) {
-            logout();
-            return;
+        if (!response.ok) {
+            throw new Error(await getErrorMessage(response));
         }
 
-        if (response.ok) {
-            const data = await response.json();
-            state.courierStatus = data.status;
-            updateStatusUI();
-        }
+        const data = await response.json();
+        state.courierStatus = data.status;
+        updateStatusUI();
     } catch (error) {
         showError(error.message);
     }
@@ -58,8 +54,8 @@ export async function goOnline() {
 
         const data = await response.json();
         state.courierStatus = data.status;
-
         updateStatusUI();
+
         showSuccess("Вы успешно вышли на линию!");
         await fetchWaitingDeliveries();
     } catch (error) {
@@ -77,8 +73,8 @@ export async function goOffline() {
 
         const data = await response.json();
         state.courierStatus = data.status;
-
         updateStatusUI();
+
         showSuccess("Вы ушли с линии.");
     } catch (error) {
         showError(error.message);
@@ -351,23 +347,22 @@ export async function fetchTodayStats() {
     try {
         const response = await getTodayStatistics();
 
-        if (response.status === 401 || response.status === 403) {
-            logout();
-            return;
+        if (!response.ok) {
+            throw new Error(await getErrorMessage(response));
         }
 
-        if (response.ok) {
-            const data = await response.json();
-            const countElem = document.getElementById("todayCount");
+        const data = await response.json();
+        const countElem = document.getElementById("todayCount");
 
-            if (countElem) {
-                countElem.textContent =
-                    data.completedDeliveriesCount ||
-                    data.completedToday ||
-                    0;
-            }
+        if (countElem) {
+            countElem.textContent =
+                data.completedDeliveriesCount ||
+                data.completedToday ||
+                0;
         }
-    } catch {}
+    } catch (error) {
+        showError(error.message);
+    }
 }
 
 export async function fetchHistoryDeliveries() {
@@ -382,11 +377,6 @@ export async function fetchHistoryDeliveries() {
 
     try {
         const response = await getHistoryDeliveriesRequest();
-
-        if (response.status === 401 || response.status === 403) {
-            logout();
-            return;
-        }
 
         if (!response.ok) {
             throw new Error(await getErrorMessage(response));

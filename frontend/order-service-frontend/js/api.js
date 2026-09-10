@@ -1,16 +1,9 @@
 import {
-    logout
-} from "./auth.js";
+    getErrorMessage
+} from "../../common/error-handler.js";
 
 export async function request(url, options = {}) {
-    const response = await fetch(url, options);
-
-    if (response.status === 401 || response.status === 403) {
-        logout();
-        return null;
-    }
-
-    return response;
+    return fetch(url, options);
 }
 
 export async function get(url, headers = {}) {
@@ -28,14 +21,6 @@ export async function post(url, body, headers = {}) {
     });
 }
 
-export async function getErrorMessage(response) {
-    try {
-        const data = await response.json();
-        return data.message ||
-            data.error ||
-            data.detail ||
-            `Ошибка: ${response.status}`;
-    } catch {
-        return `Ошибка сервера: ${response.status}`;
-    }
-}
+export {
+    getErrorMessage
+};
