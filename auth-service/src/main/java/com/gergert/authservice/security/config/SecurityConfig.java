@@ -1,7 +1,12 @@
 package com.gergert.authservice.security.config;
 
+import com.gergert.authservice.exception.SecurityExceptionHandler;
 import com.gergert.authservice.repository.UserRepository;
 import com.gergert.common.security.JwtCommonFilter;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +31,7 @@ import java.util.Collections;
 public class SecurityConfig {
     private final UserRepository userRepository;
     private final JwtCommonFilter jwtCommonFilter;
+    private final SecurityExceptionHandler securityExceptionHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -37,14 +43,21 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                               "/actuator/health",
+                                "/actuator/health",
                                 "/api/auth/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html")
                         .permitAll()
 
+                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+
                         .anyRequest().authenticated()
+                )
+
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(securityExceptionHandler)
+                        .accessDeniedHandler(securityExceptionHandler)
                 )
 
                 .addFilterBefore(jwtCommonFilter, UsernamePasswordAuthenticationFilter.class)
@@ -71,5 +84,17 @@ public class SecurityConfig {
                         Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name()))
                 ))
                 .orElseThrow(() -> new UsernameNotFoundException("User with email " + email + " not found"));
+    }
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .addSecurityItem(new SecurityRequirement().addList("BearerAuthentication"))
+                .components(new Components()
+                        .addSecuritySchemes("BearerAuthentication", new SecurityScheme()
+                                .name("BearerAuthentication")
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")));
     }
 }

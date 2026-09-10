@@ -1,4 +1,9 @@
 package com.gergert.authservice.dto;
 
-public record UserResponseDto() {
-}
+import com.gergert.common.enums.Role;
+
+public record UserResponseDto(
+        Long id,
+        String email,
+        Role role)
+{}

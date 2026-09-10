@@ -1,6 +1,6 @@
 package com.gergert.common.dto.kafka;
 
-public record UserCreatedEventDto (
+public record CourierCreatedEventDto(
         Long userId,
         String email,
         String name,

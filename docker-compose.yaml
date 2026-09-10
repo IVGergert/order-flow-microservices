@@ -37,8 +37,8 @@ services:
 
   auth-frontend:
     build:
-      context: ./frontend/auth-service-frontend
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: auth-service-frontend/Dockerfile
     container_name: auth-frontend
     restart: unless-stopped
     networks:
@@ -52,8 +52,8 @@ services:
 
   order-frontend:
     build:
-      context: ./frontend/order-service-frontend
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: order-service-frontend/Dockerfile
     container_name: order-frontend
     restart: unless-stopped
     networks:
@@ -67,8 +67,8 @@ services:
 
   delivery-frontend:
     build:
-      context: ./frontend/delivery-service-frontend
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: delivery-service-frontend/Dockerfile
     container_name: delivery-frontend
     restart: unless-stopped
     networks:
@@ -88,6 +88,10 @@ services:
       dockerfile: order-service/Dockerfile
     container_name: order-service
     restart: unless-stopped
+
+    ports:
+      - "8081:8081"
+
     environment:
       - ORDER_DB_URL=jdbc:postgresql://order-db:5432/${ORDER_DB_NAME}
       - PAYMENT_SERVICE_URL=http://payment-service:8082
@@ -117,6 +121,10 @@ services:
       dockerfile: payment-service/Dockerfile
     container_name: payment-service
     restart: unless-stopped
+
+    ports:
+      - "8082:8082"
+
     environment:
       - PAYMENT_DB_URL=jdbc:postgresql://payment-db:5432/${PAYMENT_DB_NAME}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -140,6 +148,10 @@ services:
       dockerfile: delivery-service/Dockerfile
     container_name: delivery-service
     restart: unless-stopped
+
+    ports:
+      - "8083:8083"
+
     environment:
       - DELIVERY_DB_URL=jdbc:postgresql://delivery-db:5432/${DELIVERY_DB_NAME}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -166,6 +178,10 @@ services:
       dockerfile: auth-service/Dockerfile
     container_name: auth-service
     restart: unless-stopped
+
+    ports:
+      - "8084:8084"
+
     environment:
       - AUTH_DB_URL=jdbc:postgresql://auth-db:5432/${AUTH_DB_NAME}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -173,10 +189,13 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION_MS_JWT_TOKEN=${JWT_EXPIRATION_MS_JWT_TOKEN}
       - JWT_EXPIRATION_MS_REFRESH_TOKEN=${JWT_EXPIRATION_MS_REFRESH_TOKEN}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     networks:
       - order-flow-network
     depends_on:
       auth-db:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1" ]
