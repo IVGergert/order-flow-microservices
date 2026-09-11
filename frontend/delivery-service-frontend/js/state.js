@@ -10,7 +10,7 @@ export function getAccessToken() {
 }
 
 export function getUserEmail() {
-    return localStorage.getItem("userEmail") || "Курьер";
+    return localStorage.getItem("userEmail");
 }
 
 export function buildAuthHeaders() {

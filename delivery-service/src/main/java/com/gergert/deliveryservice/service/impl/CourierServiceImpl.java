@@ -26,6 +26,7 @@ public class CourierServiceImpl implements CourierService {
         if (courier.getCourierStatus() == CourierStatus.OFFLINE) {
             courier.setCourierStatus(CourierStatus.AVAILABLE);
             courierRepository.save(courier);
+
             log.info("Courier userId={} went ONLINE", userId);
         }
 
@@ -38,13 +39,12 @@ public class CourierServiceImpl implements CourierService {
         Courier courier = getCourierByUserId(userId);
 
         if (courier.getCourierStatus() != CourierStatus.AVAILABLE) {
-            throw new CourierNotAvailableException(
-                    "Cannot go offline while having an active delivery!"
-            );
+            throw new CourierNotAvailableException("Cannot go offline while having an active delivery!");
         }
 
         courier.setCourierStatus(CourierStatus.OFFLINE);
         courierRepository.save(courier);
+
         log.info("Courier courierId = {} went OFFLINE", courier.getId());
 
         return new CourierStatusResponseDto(courier.getCourierStatus());
@@ -55,6 +55,16 @@ public class CourierServiceImpl implements CourierService {
     public CourierStatusResponseDto getStatus(Long userId) {
         Courier courier = getCourierByUserId(userId);
         return new CourierStatusResponseDto(courier.getCourierStatus());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void validateLogout(Long userId) {
+        Courier courier = getCourierByUserId(userId);
+
+        if (courier.getCourierStatus() != CourierStatus.OFFLINE) {
+            throw new CourierNotAvailableException("Cannot logout while courier is online or has an active delivery!");
+        }
     }
 
     private Courier getCourierByUserId(Long userId) {

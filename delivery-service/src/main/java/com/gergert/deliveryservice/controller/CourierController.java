@@ -32,4 +32,10 @@ public class CourierController {
     public ResponseEntity<CourierStatusResponseDto> getStatus(@AuthenticationPrincipal JwtClaimsDto claims) {
         return ResponseEntity.ok(courierService.getStatus(claims.userId()));
     }
+
+    @PostMapping("/courier/validate-logout")
+    public ResponseEntity<Void> validateLogout(@AuthenticationPrincipal JwtClaimsDto claims) {
+        courierService.validateLogout(claims.userId());
+        return ResponseEntity.noContent().build();
+    }
 }

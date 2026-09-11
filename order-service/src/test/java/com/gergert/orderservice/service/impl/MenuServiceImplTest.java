@@ -4,6 +4,7 @@ import com.gergert.orderservice.entity.MenuCategory;
 import com.gergert.orderservice.entity.MenuItem;
 import com.gergert.orderservice.repository.MenuItemRepository;
 import com.gergert.orderservice.exception.MenuItemNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,31 +21,100 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MenuServiceImplTest {
-    @Mock private MenuItemRepository repository;
-    @InjectMocks private MenuServiceImpl service;
+    @Mock
+    private MenuItemRepository menuItemRepository;
+
+    @InjectMocks
+    private MenuServiceImpl service;
+
+    private MenuItem pizza;
+
+    @BeforeEach
+    void setUp() {
+        pizza = new MenuItem(
+                1L,
+                "Pizza",
+                new BigDecimal("10.00"),
+                "Pizza description",
+                "pizza.jpg",
+                MenuCategory.PIZZA
+        );
+    }
+
+
+    // getAllItems()
 
     @Test
-    void getAllItems_shouldReturnItemsFromRepository() {
-        MenuItem item = new MenuItem(1L, "Pizza", new BigDecimal("10.00"), "desc", "image", MenuCategory.PIZZA);
-        when(repository.findAll()).thenReturn(List.of(item));
+    void getAllItems_shouldReturnAllMenuItems() {
+        MenuItem burger = new MenuItem(
+                2L,
+                "Burger",
+                new BigDecimal("8.50"),
+                "Burger description",
+                "burger.jpg",
+                MenuCategory.BURGERS
+        );
 
-        assertThat(service.getAllItems()).containsExactly(item);
-        verify(repository).findAll();
+        when(menuItemRepository.findAll())
+                .thenReturn(List.of(pizza, burger));
+
+        List<MenuItem> result = service.getAllItems();
+
+        assertThat(result)
+                .containsExactly(pizza, burger);
+
+        verify(menuItemRepository)
+                .findAll();
+
+        verifyNoMoreInteractions(menuItemRepository);
     }
 
     @Test
-    void getItemById_shouldReturnItem() {
-        MenuItem item = new MenuItem(1L, "Pizza", new BigDecimal("10.00"), "desc", "image", MenuCategory.PIZZA);
-        when(repository.findById(1L)).thenReturn(Optional.of(item));
+    void getAllItems_shouldReturnEmptyListWhenMenuIsEmpty() {
+        when(menuItemRepository.findAll())
+                .thenReturn(List.of());
 
-        assertThat(service.getItemById(1L)).isSameAs(item);
+        List<MenuItem> result = service.getAllItems();
+
+        assertThat(result)
+                .isEmpty();
+
+        verify(menuItemRepository)
+                .findAll();
+
+        verifyNoMoreInteractions(menuItemRepository);
+    }
+
+    // getItemById()
+
+    @Test
+    void getItemById_shouldReturnItemWhenExists() {
+        when(menuItemRepository.findById(1L))
+                .thenReturn(Optional.of(pizza));
+
+        MenuItem result = service.getItemById(1L);
+
+        assertThat(result)
+                .isSameAs(pizza);
+
+        verify(menuItemRepository)
+                .findById(1L);
+
+        verifyNoMoreInteractions(menuItemRepository);
     }
 
     @Test
-    void getItemById_shouldReturnNotFound() {
-        when(repository.findById(99L)).thenReturn(Optional.empty());
+    void getItemById_shouldThrowWhenItemDoesNotExist() {
+        when(menuItemRepository.findById(99L))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getItemById(99L))
-                .isInstanceOf(MenuItemNotFoundException.class);
+                .isInstanceOf(MenuItemNotFoundException.class)
+                .hasMessage("Menu item with id `99` not found");
+
+        verify(menuItemRepository)
+                .findById(99L);
+
+        verifyNoMoreInteractions(menuItemRepository);
     }
 }

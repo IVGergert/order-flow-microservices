@@ -2,18 +2,18 @@ import {
     getCourierStatus,
     goOnlineRequest,
     goOfflineRequest,
+    validateLogoutRequest,
     getTodayStatistics,
     getCurrentDeliveryRequest,
     getWaitingDeliveriesRequest,
     getHistoryDeliveriesRequest,
     acceptDeliveryRequest,
     pickUpOrderRequest,
-    completeDeliveryRequest,
-    getErrorMessage
+    completeDeliveryRequest
 } from "./api.js";
 
 import {
-    state,
+    state
 } from "./state.js";
 
 import {
@@ -28,15 +28,14 @@ import {
     escapeHtml
 } from "./ui.js";
 
+// Courier status
+
 export async function fetchCourierStatus() {
     try {
-        const response = await getCourierStatus();
+        const data = await getCourierStatus();
 
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
+        if (!data) return;
 
-        const data = await response.json();
         state.courierStatus = data.status;
         updateStatusUI();
     } catch (error) {
@@ -46,17 +45,15 @@ export async function fetchCourierStatus() {
 
 export async function goOnline() {
     try {
-        const response = await goOnlineRequest();
+        const data = await goOnlineRequest();
 
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
+        if (!data) return;
 
-        const data = await response.json();
         state.courierStatus = data.status;
         updateStatusUI();
 
         showSuccess("Вы успешно вышли на линию!");
+
         await fetchWaitingDeliveries();
     } catch (error) {
         showError(error.message);
@@ -65,13 +62,10 @@ export async function goOnline() {
 
 export async function goOffline() {
     try {
-        const response = await goOfflineRequest();
+        const data = await goOfflineRequest();
 
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
+        if (!data) return;
 
-        const data = await response.json();
         state.courierStatus = data.status;
         updateStatusUI();
 
@@ -81,28 +75,27 @@ export async function goOffline() {
     }
 }
 
+// Logout
+
+export async function validateLogout() {
+    try {
+        await validateLogoutRequest();
+        return true;
+    } catch (error) {
+        showError(error.message);
+        return false;
+    }
+}
+
+// Current delivery
+
 export async function fetchCurrentDelivery() {
     showCurrentLoading();
 
     try {
-        const response = await getCurrentDeliveryRequest();
+        const data = await getCurrentDeliveryRequest();
 
-        if (response.status === 204) {
-            state.currentDelivery = null;
-            renderCurrentDelivery();
-            return;
-        }
-
-        if (response.status === 401 || response.status === 403) {
-            logout();
-            return;
-        }
-
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
-
-        state.currentDelivery = await response.json();
+        state.currentDelivery = data;
         renderCurrentDelivery();
     } catch (error) {
         state.currentDelivery = null;
@@ -119,9 +112,9 @@ function renderCurrentDelivery() {
     const pickupBtn = document.getElementById("pickupButton");
     const completeBtn = document.getElementById("completeButton");
 
-    const currentDelivery = state.currentDelivery;
+    const delivery = state.currentDelivery;
 
-    if (!currentDelivery) {
+    if (!delivery) {
         card?.classList.add("hidden");
         empty?.classList.remove("hidden");
         return;
@@ -131,24 +124,28 @@ function renderCurrentDelivery() {
     card?.classList.remove("hidden");
 
     document.getElementById("activeOrderId").textContent =
-        `Заказ №${currentDelivery.orderId}`;
+        `Заказ №${delivery.orderId}`;
 
     document.getElementById("activeAddress").textContent =
-        currentDelivery.address || "Не указан";
+        delivery.address || "Не указан";
 
     document.getElementById("activeEta").textContent =
-        currentDelivery.etaMinutes ? `~${currentDelivery.etaMinutes} мин.` : "-";
+        delivery.etaMinutes
+            ? `~${delivery.etaMinutes} мин.`
+            : "-";
 
     document.getElementById("activeDeliveryStatus").textContent =
-        getDeliveryStatusTitle(currentDelivery.deliveryStatus);
+        getDeliveryStatusTitle(delivery.deliveryStatus);
 
-    if (currentDelivery.deliveryStatus === "COURIER_ASSIGNED") {
+    if (delivery.deliveryStatus === "COURIER_ASSIGNED") {
         document.getElementById("activeCourierState").textContent =
             "Едет в ресторан 🏪";
 
         pickupBtn?.classList.remove("hidden");
         completeBtn?.classList.add("hidden");
-    } else if (currentDelivery.deliveryStatus === "PICKED_UP") {
+    }
+
+    if (delivery.deliveryStatus === "PICKED_UP") {
         document.getElementById("activeCourierState").textContent =
             "В пути к клиенту 🚚";
 
@@ -157,13 +154,11 @@ function renderCurrentDelivery() {
     }
 }
 
+// Delivery actions
+
 export async function acceptDelivery(orderId) {
     try {
-        const response = await acceptDeliveryRequest(orderId);
-
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
+        await acceptDeliveryRequest(orderId);
 
         showSuccess(`Заказ №${orderId} успешно принят!`);
 
@@ -178,11 +173,7 @@ export async function acceptDelivery(orderId) {
 
 export async function pickUpOrder(orderId) {
     try {
-        const response = await pickUpOrderRequest(orderId);
-
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
+        await pickUpOrderRequest(orderId);
 
         showSuccess("Заказ забран из ресторана! Направляйтесь к клиенту.");
 
@@ -195,13 +186,9 @@ export async function pickUpOrder(orderId) {
 
 export async function completeDelivery(orderId) {
     try {
-        const response = await completeDeliveryRequest(orderId);
+        await completeDeliveryRequest(orderId);
 
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
-
-        showSuccess(`Заказ №${orderId} успешно доставлен! 🎉`);
+        showSuccess(`Заказ №${orderId} успешно доставлен!`);
 
         await fetchCourierStatus();
         await fetchTodayStats();
@@ -211,6 +198,8 @@ export async function completeDelivery(orderId) {
     }
 }
 
+// Waiting deliveries
+
 export async function fetchWaitingDeliveries() {
     const container = document.getElementById("waitingList");
     const empty = document.getElementById("waitingEmpty");
@@ -219,60 +208,15 @@ export async function fetchWaitingDeliveries() {
     loading?.classList.remove("hidden");
     empty?.classList.add("hidden");
 
-    if (container) container.innerHTML = "";
-
-    if (state.courierStatus === "OFFLINE") {
-        loading?.classList.add("hidden");
-
-        if (container) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">🟠</div>
-                    <h3>Вы сейчас офлайн</h3>
-                    <p>Выйдите на линию, чтобы увидеть доступные заказы.</p>
-                    <button type="button" class="primary-button" id="goOnlineFromWaitingButton">
-                        Выйти на линию
-                    </button>
-                </div>
-            `;
-
-            document
-                .getElementById("goOnlineFromWaitingButton")
-                ?.addEventListener("click", goOnline);
-        }
-
-        return;
-    }
-
-    if (state.courierStatus !== "AVAILABLE") {
-        loading?.classList.add("hidden");
-
-        if (container) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">🚚</div>
-                    <h3>У вас есть активная доставка</h3>
-                    <p>Доступные заказы будут доступны после завершения текущей доставки.</p>
-                </div>
-            `;
-        }
-
-        return;
+    if (container) {
+        container.innerHTML = "";
     }
 
     try {
-        const response = await getWaitingDeliveriesRequest();
+        const data = await getWaitingDeliveriesRequest();
 
-        if (response.status === 401 || response.status === 403) {
-            logout();
-            return;
-        }
+        state.waitingDeliveries = data || [];
 
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
-
-        state.waitingDeliveries = await response.json();
         renderWaitingDeliveries();
     } catch (error) {
         if (container) {
@@ -297,73 +241,82 @@ function renderWaitingDeliveries() {
 
     container.innerHTML = "";
 
-    const waitingDeliveries = state.waitingDeliveries;
+    const deliveries = state.waitingDeliveries;
 
-    if (!waitingDeliveries || waitingDeliveries.length === 0) {
+    if (!deliveries?.length) {
         empty?.classList.remove("hidden");
         return;
     }
 
     empty?.classList.add("hidden");
 
-    waitingDeliveries.forEach(delivery => {
+    deliveries.forEach(delivery => {
         const card = document.createElement("article");
+
         card.className = "delivery-card";
 
         card.innerHTML = `
             <div class="delivery-card-header">
                 <h3>Заказ №${delivery.orderId}</h3>
-                <span class="order-status status-warning">Ожидает курьера</span>
+
+                <span class="order-status status-warning">
+                    Ожидает курьера
+                </span>
             </div>
 
             <div class="delivery-card-body">
                 <div>
                     <span>Адрес доставки</span>
-                    <strong>${escapeHtml(delivery.address || "Не указан")}</strong>
+                    <strong>
+                        ${escapeHtml(delivery.address)}
+                    </strong>
                 </div>
 
                 <div>
                     <span>Время на доставку</span>
-                    <strong>~${delivery.etaMinutes || 30} мин.</strong>
+                    <strong>
+                        ~${delivery.etaMinutes} мин.
+                    </strong>
                 </div>
 
                 <div>
-                    <button type="button" class="primary-button accept-btn">
+                    <button
+                        type="button"
+                        class="primary-button accept-btn"
+                        data-order-id="${delivery.orderId}"
+                    >
                         Принять заказ
                     </button>
                 </div>
             </div>
         `;
 
-        card.querySelector(".accept-btn")?.addEventListener("click", () => {
-            acceptDelivery(delivery.orderId);
-        });
-
         container.appendChild(card);
     });
 }
 
+// Statistics
+
 export async function fetchTodayStats() {
     try {
-        const response = await getTodayStatistics();
+        const data = await getTodayStatistics();
 
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
+        if (!data) return;
 
-        const data = await response.json();
-        const countElem = document.getElementById("todayCount");
+        const countElement = document.getElementById("todayCount");
 
-        if (countElem) {
-            countElem.textContent =
-                data.completedDeliveriesCount ||
-                data.completedToday ||
+        if (countElement) {
+            countElement.textContent =
+                data.completedDeliveriesCount ??
+                data.completedToday ??
                 0;
         }
     } catch (error) {
         showError(error.message);
     }
 }
+
+// History
 
 export async function fetchHistoryDeliveries() {
     const container = document.getElementById("historyList");
@@ -373,16 +326,15 @@ export async function fetchHistoryDeliveries() {
     loading?.classList.remove("hidden");
     empty?.classList.add("hidden");
 
-    if (container) container.innerHTML = "";
+    if (container) {
+        container.innerHTML = "";
+    }
 
     try {
-        const response = await getHistoryDeliveriesRequest();
+        const data = await getHistoryDeliveriesRequest();
 
-        if (!response.ok) {
-            throw new Error(await getErrorMessage(response));
-        }
+        state.historyDeliveries = data || [];
 
-        state.historyDeliveries = await response.json();
         renderHistory();
     } catch (error) {
         if (container) {
@@ -407,25 +359,28 @@ function renderHistory() {
 
     container.innerHTML = "";
 
-    const historyDeliveries = state.historyDeliveries;
+    const deliveries = state.historyDeliveries;
 
-    if (!historyDeliveries || historyDeliveries.length === 0) {
+    if (!deliveries?.length) {
         empty?.classList.remove("hidden");
         return;
     }
 
     empty?.classList.add("hidden");
 
-    historyDeliveries.forEach(delivery => {
+    deliveries.forEach(delivery => {
         const card = document.createElement("article");
+
         card.className = "delivery-card";
 
         card.innerHTML = `
             <div class="delivery-card-header">
                 <div>
                     <h3>Заказ №${delivery.orderId}</h3>
+
                     <span class="order-date">
-                        Доставка завершена: ${formatDate(delivery.completedAt)}
+                        Доставка завершена:
+                        ${formatDate(delivery.completedAt)}
                     </span>
                 </div>
 
@@ -437,13 +392,17 @@ function renderHistory() {
             <div class="delivery-card-body">
                 <div>
                     <span>Адрес</span>
-                    <strong>${escapeHtml(delivery.address || "-")}</strong>
+                    <strong>
+                        ${escapeHtml(delivery.address || "-")}
+                    </strong>
                 </div>
 
                 <div>
                     <span>Время доставки</span>
                     <strong>
-                        ${delivery.etaMinutes ? `${delivery.etaMinutes} мин.` : "-"}
+                        ${delivery.etaMinutes
+            ? `${delivery.etaMinutes} мин.`
+            : "-"}
                     </strong>
                 </div>
             </div>

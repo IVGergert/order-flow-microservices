@@ -40,7 +40,7 @@ public class DeliveryController {
 
     @GetMapping("/order/{orderId}")
     public ResponseEntity<DeliveryResponseDto> getDeliveryByOrderId(@PathVariable Long orderId,
-                                                         @AuthenticationPrincipal JwtClaimsDto claims) {
+                                                                    @AuthenticationPrincipal JwtClaimsDto claims) {
 
         return ResponseEntity.ok(deliveryService.getDeliveryByOrderId(orderId, claims.userId()));
     }
@@ -53,13 +53,13 @@ public class DeliveryController {
 
     @PostMapping("/{orderId}/pickup")
     public ResponseEntity<DeliveryResponseDto> pickUpOrder(@PathVariable Long orderId,
-                                              @AuthenticationPrincipal JwtClaimsDto claims) {
+                                                           @AuthenticationPrincipal JwtClaimsDto claims) {
         return ResponseEntity.ok(deliveryService.pickUpOrder(orderId, claims.userId()));
     }
 
     @PostMapping("/{orderId}/complete")
     public ResponseEntity<DeliveryResponseDto> completeDelivery(@PathVariable Long orderId,
-                                                   @AuthenticationPrincipal JwtClaimsDto claims) {
+                                                                @AuthenticationPrincipal JwtClaimsDto claims) {
         return ResponseEntity.ok(deliveryService.completeDelivery(orderId, claims.userId()));
     }
 

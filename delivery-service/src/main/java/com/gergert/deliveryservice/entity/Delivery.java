@@ -11,9 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "deliveries", indexes = {
-        @Index(name = "idx_delivery_status", columnList = "delivery_status")
-})
+@Table(name = "deliveries")
 public class Delivery {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)

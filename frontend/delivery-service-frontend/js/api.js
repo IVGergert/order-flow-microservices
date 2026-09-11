@@ -1,81 +1,74 @@
 import {
-    buildAuthHeaders
+    buildAuthHeaders,
+    logout
 } from "./state.js";
 
 import {
     getErrorMessage
 } from "../../common/error-handler.js";
 
-export async function getCourierStatus() {
-    return fetch("/api/deliveries/courier/status", {
-        method: "GET",
-        headers: buildAuthHeaders()
+async function request(url, options = {}) {
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            ...buildAuthHeaders(),
+            ...options.headers
+        }
     });
+
+    if (response.status === 401) {
+        logout();
+        return null;
+    }
+
+    if (response.status === 204) {
+        return null;
+    }
+
+    if (!response.ok) {
+        const message = await getErrorMessage(response);
+        throw new Error(message);
+    }
+
+    return response.json();
 }
 
-export async function goOnlineRequest() {
-    return fetch("/api/deliveries/courier/go-online", {
-        method: "POST",
-        headers: buildAuthHeaders()
-    });
-}
+export const getCourierStatus = () => request("/api/deliveries/courier/status");
 
-export async function goOfflineRequest() {
-    return fetch("/api/deliveries/courier/go-offline", {
-        method: "POST",
-        headers: buildAuthHeaders()
-    });
-}
+export const getTodayStatistics = () => request("/api/deliveries/statistics/today");
 
-export async function getTodayStatistics() {
-    return fetch("/api/deliveries/statistics/today", {
-        method: "GET",
-        headers: buildAuthHeaders()
-    });
-}
+export const getCurrentDeliveryRequest = () => request("/api/deliveries/current");
 
-export async function getCurrentDeliveryRequest() {
-    return fetch("/api/deliveries/current", {
-        method: "GET",
-        headers: buildAuthHeaders()
-    });
-}
+export const getWaitingDeliveriesRequest = () => request("/api/deliveries/waiting");
 
-export async function getWaitingDeliveriesRequest() {
-    return fetch("/api/deliveries/waiting", {
-        method: "GET",
-        headers: buildAuthHeaders()
-    });
-}
+export const getHistoryDeliveriesRequest = () => request("/api/deliveries/history");
 
-export async function getHistoryDeliveriesRequest() {
-    return fetch("/api/deliveries/history", {
-        method: "GET",
-        headers: buildAuthHeaders()
+export const goOnlineRequest = () =>
+    request("/api/deliveries/courier/go-online", {
+        method: "POST"
     });
-}
 
-export async function acceptDeliveryRequest(orderId) {
-    return fetch(`/api/deliveries/${orderId}/accept`, {
-        method: "POST",
-        headers: buildAuthHeaders()
+export const goOfflineRequest = () =>
+    request("/api/deliveries/courier/go-offline", {
+        method: "POST"
     });
-}
 
-export async function pickUpOrderRequest(orderId) {
-    return fetch(`/api/deliveries/${orderId}/pickup`, {
-        method: "POST",
-        headers: buildAuthHeaders()
+export const validateLogoutRequest = () =>
+    request("/api/deliveries/courier/validate-logout", {
+        method: "POST"
     });
-}
 
-export async function completeDeliveryRequest(orderId) {
-    return fetch(`/api/deliveries/${orderId}/complete`, {
-        method: "POST",
-        headers: buildAuthHeaders()
+export const acceptDeliveryRequest = orderId =>
+    request(`/api/deliveries/${orderId}/accept`, {
+        method: "POST"
     });
-}
 
-export {
-    getErrorMessage
-};
+export const pickUpOrderRequest = orderId =>
+    request(`/api/deliveries/${orderId}/pickup`, {
+        method: "POST"
+    });
+
+export const completeDeliveryRequest = orderId =>
+    request(`/api/deliveries/${orderId}/complete`, {
+        method: "POST"
+    });

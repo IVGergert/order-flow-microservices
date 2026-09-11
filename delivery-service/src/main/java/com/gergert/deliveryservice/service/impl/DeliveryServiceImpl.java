@@ -16,10 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,18 +63,13 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         Delivery saved = deliveryRepository.save(delivery);
 
-        log.info(
-                "Delivery created for order {}",
-                saved.getOrderId()
-        );
+        log.info("Delivery created for order {}", saved.getOrderId());
     }
 
     @Override
     @Transactional
     public DeliveryResponseDto acceptDelivery(Long orderId, Long courierUserId) {
-        Delivery delivery = deliveryRepository
-                .findByOrderIdForUpdate(orderId)
-                .orElseThrow(() -> new DeliveryNotFoundException("Delivery not found for orderId=" + orderId));
+        Delivery delivery = findDeliveryByOrderId(orderId);
 
         if (delivery.getDeliveryStatus() != DeliveryStatus.WAITING_FOR_COURIER) {
             throw new InvalidDeliveryStatusException("Delivery has already been accepted.");
@@ -110,10 +103,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                 kafkaEvent
         );
 
-        log.info("Courier {} accepted order {}",
-                courier.getName(),
-                orderId
-        );
+        log.info("Courier {} accepted order {}", courier.getName(), orderId);
 
         return deliveryMapper.toDeliveryDto(delivery);
     }
@@ -123,9 +113,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     public DeliveryResponseDto pickUpOrder(Long orderId, Long courierUserId) {
         Delivery delivery = findDeliveryByOrderId(orderId);
 
-        if (!delivery.getCourier().getUserId().equals(courierUserId)) {
-            throw new DeliveryAccessDeniedException("You cannot pick up someone else's order!");
-        }
+        checkCourierAccess(delivery, courierUserId);
 
         if (delivery.getDeliveryStatus() != DeliveryStatus.COURIER_ASSIGNED) {
             throw new InvalidDeliveryStatusException("Cannot pick up order with status: " + delivery.getDeliveryStatus());
@@ -154,15 +142,13 @@ public class DeliveryServiceImpl implements DeliveryService {
     public DeliveryResponseDto completeDelivery(Long orderId, Long courierUserId) {
         Delivery delivery = findDeliveryByOrderId(orderId);
 
-        if (!delivery.getCourier().getUserId().equals(courierUserId)) {
-            throw new DeliveryAccessDeniedException("You cannot complete someone else's delivery!");
-        }
+        checkCourierAccess(delivery, courierUserId);
 
         Courier courier = delivery.getCourier();
 
         if (delivery.getDeliveryStatus() != DeliveryStatus.PICKED_UP) {
-            throw new InvalidDeliveryStatusException("Cannot complete delivery before picking up order from restaurant!"
-            );
+            throw new InvalidDeliveryStatusException(
+                    "Cannot complete delivery before picking up order from restaurant!");
         }
 
         delivery.setDeliveryStatus(DeliveryStatus.DELIVERED);
@@ -186,16 +172,13 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     @Transactional(readOnly = true)
     public Optional<DeliveryResponseDto> getCurrentDeliveryByCourierUserId(Long courierUserId) {
-
-        Courier courier = getCourierByUserId(courierUserId);
-
         Set<DeliveryStatus> activeStatuses = Set.of(
                 DeliveryStatus.COURIER_ASSIGNED,
                 DeliveryStatus.PICKED_UP
         );
 
         return deliveryRepository
-                .findFirstByCourier_UserIdAndDeliveryStatusIn(courier.getUserId(), activeStatuses)
+                .findFirstByCourier_UserIdAndDeliveryStatusIn(courierUserId, activeStatuses)
                 .map(deliveryMapper::toDeliveryDto);
     }
 
@@ -216,9 +199,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     public DeliveryResponseDto getDeliveryByOrderId(Long orderId, Long courierUserId) {
         Delivery delivery = findDeliveryByOrderId(orderId);
 
-        if (!delivery.getCourier().getUserId().equals(courierUserId)) {
-            throw new DeliveryAccessDeniedException("You cannot access someone else's delivery!");
-        }
+        checkCourierAccess(delivery, courierUserId);
 
         return deliveryMapper.toDeliveryDto(delivery);
     }
@@ -269,5 +250,16 @@ public class DeliveryServiceImpl implements DeliveryService {
         return courierRepository
                 .findByUserId(courierUserId)
                 .orElseThrow(() -> new CourierNotFoundException("Courier not found."));
+    }
+
+    private void checkCourierAccess(Delivery delivery, Long courierUserId) {
+
+        if (delivery.getCourier() == null
+                || !delivery.getCourier()
+                .getUserId()
+                .equals(courierUserId)) {
+
+            throw new DeliveryAccessDeniedException("You cannot access someone else's delivery!");
+        }
     }
 }

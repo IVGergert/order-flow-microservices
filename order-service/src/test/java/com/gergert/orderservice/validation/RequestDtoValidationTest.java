@@ -18,45 +18,93 @@ class RequestDtoValidationTest {
 
     @BeforeAll
     static void setUp() {
-        validator = Validation.buildDefaultValidatorFactory().getValidator();
+        validator = Validation
+                .buildDefaultValidatorFactory()
+                .getValidator();
     }
+
+    // CreateOrderRequestDto
 
     @Test
     void createOrder_shouldRejectBlankAddress() {
-        var request = new CreateOrderRequestDto(" ", Set.of(new OrderItemRequestDto(1L, 1)));
-        assertThat(validator.validate(request)).anyMatch(v -> v.getPropertyPath().toString().equals("address"));
+        CreateOrderRequestDto request =
+                new CreateOrderRequestDto(
+                        " ",
+                        Set.of(new OrderItemRequestDto(1L, 1)));
+
+        assertThat(validator.validate(request))
+                .anyMatch(error ->
+                        error.getPropertyPath()
+                                .toString()
+                                .equals("address"));
     }
 
     @Test
     void createOrder_shouldRejectEmptyItems() {
-        var request = new CreateOrderRequestDto("Test address", Set.of());
-        assertThat(validator.validate(request)).anyMatch(v -> v.getPropertyPath().toString().equals("items"));
+        CreateOrderRequestDto request =
+                new CreateOrderRequestDto(
+                        "Test address", Set.of());
+
+        assertThat(validator.validate(request))
+                .anyMatch(error ->
+                        error.getPropertyPath()
+                                .toString()
+                                .equals("items"));
     }
 
     @Test
     void createOrder_shouldValidateNestedItems() {
-        var request = new CreateOrderRequestDto("Test address", Set.of(new OrderItemRequestDto(-1L, 0)));
-        var fields = validator.validate(request).stream().map(v -> v.getPropertyPath().toString()).toList();
-        assertThat(fields).anyMatch(path -> path.contains("itemId"));
-        assertThat(fields).anyMatch(path -> path.contains("quantity"));
-    }
+        CreateOrderRequestDto request =
+                new CreateOrderRequestDto(
+                        "Test address",
+                        Set.of(new OrderItemRequestDto(-1L, 0)));
 
-    @Test
-    void orderPayment_shouldRejectNullPaymentMethod() {
-        var request = new OrderPaymentRequestDto(null);
-        assertThat(validator.validate(request))
-                .anyMatch(v -> v.getPropertyPath().toString().equals("paymentMethod"));
-    }
+        var fields = validator.validate(request)
+                .stream()
+                .map(error ->
+                        error.getPropertyPath().toString()
+                )
+                .toList();
 
-    @Test
-    void orderPayment_shouldAcceptValidRequest() {
-        var request = new OrderPaymentRequestDto(PaymentMethod.CARD);
-        assertThat(validator.validate(request)).isEmpty();
+        assertThat(fields)
+                .anyMatch(path -> path.contains("itemId"));
+
+        assertThat(fields)
+                .anyMatch(path -> path.contains("quantity"));
     }
 
     @Test
     void createOrder_shouldAcceptValidRequest() {
-        var request = new CreateOrderRequestDto("Test address", Set.of(new OrderItemRequestDto(1L, 2)));
-        assertThat(validator.validate(request)).isEmpty();
+        CreateOrderRequestDto request =
+                new CreateOrderRequestDto(
+                        "Test address",
+                        Set.of(new OrderItemRequestDto(1L, 2)));
+
+        assertThat(validator.validate(request))
+                .isEmpty();
+    }
+
+    // OrderPaymentRequestDto
+
+    @Test
+    void orderPayment_shouldRejectNullPaymentMethod() {
+        OrderPaymentRequestDto request =
+                new OrderPaymentRequestDto(null);
+
+        assertThat(validator.validate(request))
+                .anyMatch(error ->
+                        error.getPropertyPath()
+                                .toString()
+                                .equals("paymentMethod")
+                );
+    }
+
+    @Test
+    void orderPayment_shouldAcceptValidRequest() {
+        OrderPaymentRequestDto request =
+                new OrderPaymentRequestDto(PaymentMethod.CARD);
+
+        assertThat(validator.validate(request))
+                .isEmpty();
     }
 }

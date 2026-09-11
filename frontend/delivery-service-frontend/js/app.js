@@ -17,79 +17,158 @@ import {
     fetchHistoryDeliveries,
     goOnline,
     goOffline,
+    acceptDelivery,
     pickUpOrder,
-    completeDelivery
+    completeDelivery,
+    validateLogout
 } from "./deliveries.js";
 
-document.addEventListener("DOMContentLoaded", async () => {
-    if (!getAccessToken()) {
-        window.location.href = "/";
-        return;
+// Application start
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        if (!getAccessToken()) {
+            logout();
+        }
+
+        renderUserInfo();
+
+        await fetchCourierStatus();
+        await fetchTodayStats();
+        await fetchCurrentDelivery();
     }
+);
 
-    renderUserInfo();
 
-    await fetchCourierStatus();
-    await fetchTodayStats();
-    await fetchCurrentDelivery();
-});
+// User actions
 
-document.addEventListener("click", event => {
-    const navItem = event.target.closest(".nav-item");
+document.addEventListener(
+    "click",
+    async event => {
 
-    if (navItem) {
-        const section = navItem.dataset.section;
 
-        if (section) {
+        const navItem = event.target.closest(".nav-item");
+
+        if (navItem) {
+            const section = navItem.dataset.section;
+
+            if (!section) return;
+
             showSection(section);
+
+            if (section === "current") {
+                await fetchCurrentDelivery();
+            }
+
+            if (section === "waiting") {
+                await fetchWaitingDeliveries();
+            }
+
+            if (section === "history") {
+                await fetchHistoryDeliveries();
+            }
+
+            return;
         }
 
-        return;
-    }
 
-    if (event.target.closest("#statusToggleButton")) {
-        if (state.courierStatus === "OFFLINE") {
-            goOnline();
-        } else {
-            goOffline();
+        // Online / Offline
+
+        if (event.target.closest("#statusToggleButton")) {
+            if (state.courierStatus === "OFFLINE") {
+                await goOnline();
+            } else {
+                await goOffline();
+            }
+
+            return;
         }
 
-        return;
-    }
 
-    if (event.target.closest("#pickupButton")) {
-        if (state.currentDelivery) {
-            pickUpOrder(state.currentDelivery.orderId);
+        // Accept delivery
+
+        const acceptButton = event.target.closest(".accept-btn");
+
+        if (acceptButton) {
+            const orderId = acceptButton.dataset.orderId;
+
+            if (orderId) {
+                await acceptDelivery(orderId);
+            }
+
+            return;
         }
 
-        return;
-    }
 
-    if (event.target.closest("#completeButton")) {
-        if (state.currentDelivery) {
-            completeDelivery(state.currentDelivery.orderId);
+        // Pickup
+
+        if (event.target.closest("#pickupButton")) {
+            if (state.currentDelivery) {
+                await pickUpOrder(state.currentDelivery.orderId);
+            }
+
+            return;
         }
 
-        return;
-    }
 
-    if (event.target.closest("#goToWaitingButton")) {
-        showSection("waiting");
-        return;
-    }
+        // Complete
 
-    if (event.target.closest("#refreshWaitingButton")) {
-        fetchWaitingDeliveries();
-        return;
-    }
+        if (event.target.closest("#completeButton")) {
+            if (state.currentDelivery) {
+                await completeDelivery(state.currentDelivery.orderId);
+            }
 
-    if (event.target.closest("#refreshHistoryButton")) {
-        fetchHistoryDeliveries();
-        return;
-    }
+            return;
+        }
 
-    if (event.target.closest("#logoutButton")) {
-        logout();
-        return;
+
+        // Go to waiting
+
+        if (event.target.closest("#goToWaitingButton")) {
+            showSection("waiting");
+            await fetchWaitingDeliveries();
+            return;
+        }
+
+
+        // Go online from waiting
+
+        if (event.target.closest("#goOnlineFromWaitingButton")) {
+            await goOnline();
+            return;
+        }
+
+
+        // Refresh waiting
+
+        if (event.target.closest("#refreshWaitingButton")) {
+            await fetchWaitingDeliveries();
+            return;
+        }
+
+
+        // Refresh history
+
+        if (event.target.closest("#refreshHistoryButton")) {
+            await fetchHistoryDeliveries();
+            return;
+        }
+
+
+        // Logout
+
+        const logoutButton = event.target.closest("#logoutButton, #profileLogoutButton");
+
+        if (logoutButton) {
+            const canLogout = await validateLogout();
+
+            if (canLogout) {
+                logout();
+            }
+
+            return;
+        }
     }
-});
+);

@@ -1,29 +1,31 @@
 import {
     state,
     getUserEmail,
-    logout
 } from "./state.js";
 
-import {
-    fetchCurrentDelivery,
-    fetchWaitingDeliveries,
-    fetchHistoryDeliveries
-} from "./deliveries.js";
+// User
 
 export function renderUserInfo() {
     const email = getUserEmail();
+
     const emailElement = document.getElementById("userEmail");
     const avatarElement = document.getElementById("userAvatar");
 
-    if (emailElement) emailElement.textContent = email;
-    if (avatarElement) avatarElement.textContent = email.charAt(0).toUpperCase();
+    if (emailElement) {
+        emailElement.textContent = email;
+    }
+
+    if (avatarElement) {
+        avatarElement.textContent = email.charAt(0).toUpperCase();
+    }
 }
+
+// Courier status
 
 export function updateStatusUI() {
     const toggleBtn = document.getElementById("statusToggleButton");
     const toggleText = document.getElementById("statusToggleText");
     const statusBadge = document.getElementById("courierStatusBadge");
-
     const isOnline = state.courierStatus !== "OFFLINE";
 
     if (toggleBtn) {
@@ -31,11 +33,16 @@ export function updateStatusUI() {
     }
 
     if (toggleText) {
-        toggleText.textContent = isOnline ? "На линии (Завершить)" : "Выйти на линию";
+        toggleText.textContent =
+            isOnline ?
+                "На линии (Завершить)"
+                : "Выйти на линию";
     }
 
     if (statusBadge) {
-        statusBadge.className = `courier-status-badge ${isOnline ? "online" : "offline"}`;
+        statusBadge.className =
+            `courier-status-badge ${isOnline ? "online" : "offline"}`;
+
         statusBadge.textContent = isOnline ? "Онлайн" : "Оффлайн";
     }
 }
@@ -49,19 +56,16 @@ export function showSection(section) {
     if (section === "current") {
         document.getElementById("currentSection")?.classList.remove("hidden");
         updatePageHeader("Текущий заказ", "Управление вашим активным заказом");
-        fetchCurrentDelivery();
     }
 
     if (section === "waiting") {
         document.getElementById("waitingSection")?.classList.remove("hidden");
         updatePageHeader("Доступные заказы", "Выберите заказ для доставки");
-        fetchWaitingDeliveries();
     }
 
     if (section === "history") {
         document.getElementById("historySection")?.classList.remove("hidden");
         updatePageHeader("История доставок", "Выполненные заказы");
-        fetchHistoryDeliveries();
     }
 
     if (section === "profile") {
@@ -78,32 +82,44 @@ function updateNavigation(section) {
     });
 
     const activeItem = document.querySelector(`[data-section="${section}"]`);
-    if (activeItem) activeItem.classList.add("active");
+
+    activeItem?.classList.add("active");
 }
 
 function updatePageHeader(title, subtitle) {
     const titleElement = document.getElementById("pageTitle");
     const subtitleElement = document.getElementById("pageSubtitle");
 
-    if (titleElement) titleElement.textContent = title;
-    if (subtitleElement) subtitleElement.textContent = subtitle;
+    if (titleElement) {
+        titleElement.textContent = title;
+    }
+
+    if (subtitleElement) {
+        subtitleElement.textContent = subtitle;
+    }
 }
+
+// Profile
 
 function showProfile() {
     let profileSection = document.getElementById("profileSection");
 
     if (!profileSection) {
         profileSection = createProfileSection();
-        document.querySelector(".main-content").appendChild(profileSection);
+
+        document.querySelector(".main-content")
+            ?.appendChild(profileSection);
     }
 
     profileSection.classList.remove("hidden");
     updatePageHeader("Профиль", "Ваши данные курьера");
+
     updateNavigation("profile");
 }
 
 function createProfileSection() {
     const section = document.createElement("section");
+
     section.id = "profileSection";
     section.className = "content-section profile-section";
 
@@ -115,6 +131,7 @@ function createProfileSection() {
                 <div class="profile-avatar-large">
                     ${escapeHtml(email.charAt(0).toUpperCase())}
                 </div>
+
                 <div>
                     <h2>${escapeHtml(email)}</h2>
                 </div>
@@ -127,18 +144,24 @@ function createProfileSection() {
                 </div>
             </div>
 
-            <button type="button" class="logout-profile-button" id="profileLogoutButton">
+            <button
+                type="button"
+                class="logout-profile-button"
+                id="profileLogoutButton"
+            >
                 Выйти из аккаунта
             </button>
         </div>
     `;
 
-    section.querySelector("#profileLogoutButton")?.addEventListener("click", logout);
     return section;
 }
 
+// Alerts
+
 export function showError(message) {
     const alertBox = document.getElementById("alertBox");
+
     if (!alertBox) return;
 
     alertBox.textContent = message;
@@ -147,16 +170,20 @@ export function showError(message) {
 
 export function showSuccess(message) {
     const alertBox = document.getElementById("alertBox");
+
     if (!alertBox) return;
 
     alertBox.textContent = message;
     alertBox.className = "alert alert-success";
 
     clearTimeout(showSuccess.timeout);
+
     showSuccess.timeout = setTimeout(() => {
         alertBox.className = "alert hidden";
     }, 3500);
 }
+
+// Loading
 
 export function showCurrentLoading() {
     document.getElementById("currentLoading")?.classList.remove("hidden");
@@ -181,7 +208,10 @@ export function formatDate(date) {
     if (!date) return "-";
 
     const parsed = new Date(date);
-    if (Number.isNaN(parsed.getTime())) return "-";
+
+    if (Number.isNaN(parsed.getTime())) {
+        return "-";
+    }
 
     return parsed.toLocaleString("ru-RU", {
         day: "2-digit",
@@ -193,7 +223,9 @@ export function formatDate(date) {
 }
 
 export function escapeHtml(value) {
-    if (value === null || value === undefined) return "";
+    if (value === null || value === undefined) {
+        return "";
+    }
 
     return String(value)
         .replaceAll("&", "&amp;")
